@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroNotes AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <aside class="sidebar">
+            <div class="logo-section">
+                <i class="fa-solid fa-brain logo-icon"></i>
+                <h2>NeuroNotes</h2>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-btn active">
+                    <i class="fa-solid fa-pen-to-square"></i> New Note
+                </button>
+                <button class="nav-btn" onclick="alert('History Feature coming soon!')">
+                    <i class="fa-solid fa-clock-rotate-left"></i> History
+                </button>
+                <button class="nav-btn" onclick="alert('Saved Items coming soon!')">
+                    <i class="fa-solid fa-bookmark"></i> Saved
+                </button>
+                <button class="nav-btn" onclick="alert('Settings coming soon!')">
+                    <i class="fa-solid fa-gear"></i> Settings
+                </button>
+            </nav>
+            
+            <div class="sidebar-bottom">
+                <button class="nav-btn" id="themeToggle">
+                    <i class="fa-solid fa-moon"></i> Dark Mode
+                </button>
+                <div class="user-card">
+                    <div class="user-avatar">YS</div>
+                    <div class="user-info">
+                        <span class="name">Yuvraj Singh</span>
+                        <span class="role">Student Plan</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-titles">
+                    <h1>Software Engineering Notes</h1>
+                    <span class="badge">Draft</span>
+                </div>
+                <div class="header-actions">
+                    <button class="action-btn secondary" title="Export"><i class="fa-solid fa-download"></i></button>
+                    <button class="action-btn primary" id="processBtn">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Refine with AI
+                    </button>
+                </div>
+            </header>
+
+            <div class="workspace">
+                
+                <div class="panel input-panel">
+                    <div class="panel-head">
+                        <span class="panel-title"><i class="fa-regular fa-keyboard"></i> Raw Input</span>
+                        <span class="char-count" id="charCount">0 chars</span>
+                    </div>
+                    <textarea id="userInput" placeholder="Paste your rough class notes, random ideas, or code snippets here..."></textarea>
+                </div>
+
+                <div class="panel output-panel">
+                    <div class="panel-head">
+                        <span class="panel-title"><i class="fa-solid fa-robot"></i> AI Polished Output</span>
+                        <button class="icon-btn" id="copyBtn" title="Copy"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                    <div id="aiOutput" class="markdown-content empty-state">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <p>Enter your notes on the left and click "Refine" to see the magic.</p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
