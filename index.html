@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NeuroNotes AI</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -20,16 +23,27 @@
             </div>
             
             <nav class="nav-menu">
-                <button class="nav-btn active">
+                <button class="nav-btn active" id="newNoteBtn">
                     <i class="fa-solid fa-pen-to-square"></i> New Note
                 </button>
-                <button class="nav-btn" onclick="alert('History Feature coming soon!')">
-                    <i class="fa-solid fa-clock-rotate-left"></i> History
-                </button>
-                <button class="nav-btn" onclick="alert('Saved Items coming soon!')">
-                    <i class="fa-solid fa-bookmark"></i> Saved
-                </button>
-                <button class="nav-btn" onclick="alert('Settings coming soon!')">
+
+                <div class="nav-section">
+                    <button class="nav-btn" id="historyToggle">
+                        <i class="fa-solid fa-clock-rotate-left"></i> History
+                        <i class="fa-solid fa-chevron-down arrow"></i>
+                    </button>
+                    <div id="historyList" class="nav-list" style="display: none;"></div>
+                </div>
+
+                <div class="nav-section">
+                    <button class="nav-btn" id="savedToggle">
+                        <i class="fa-solid fa-bookmark"></i> Saved
+                        <i class="fa-solid fa-chevron-down arrow"></i>
+                    </button>
+                    <div id="savedList" class="nav-list" style="display: none;"></div>
+                </div>
+
+                <button class="nav-btn" id="settingsBtn">
                     <i class="fa-solid fa-gear"></i> Settings
                 </button>
             </nav>
@@ -55,7 +69,9 @@
                     <span class="badge">Draft</span>
                 </div>
                 <div class="header-actions">
-                    <button class="action-btn secondary" title="Export"><i class="fa-solid fa-download"></i></button>
+                    <button class="action-btn secondary" id="exportBtn" title="Export to Text">
+                        <i class="fa-solid fa-download"></i>
+                    </button>
                     <button class="action-btn primary" id="processBtn">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> Refine with AI
                     </button>
@@ -63,28 +79,58 @@
             </header>
 
             <div class="workspace">
-                
                 <div class="panel input-panel">
                     <div class="panel-head">
                         <span class="panel-title"><i class="fa-regular fa-keyboard"></i> Raw Input</span>
-                        <span class="char-count" id="charCount">0 chars</span>
                     </div>
-                    <textarea id="userInput" placeholder="Paste your rough class notes, random ideas, or code snippets here..."></textarea>
+                    <textarea id="userInput" placeholder="Paste your rough class notes here..."></textarea>
                 </div>
 
                 <div class="panel output-panel">
                     <div class="panel-head">
-                        <span class="panel-title"><i class="fa-solid fa-robot"></i> AI Polished Output</span>
-                        <button class="icon-btn" id="copyBtn" title="Copy"><i class="fa-regular fa-copy"></i></button>
+                        <span class="panel-title"><i class="fa-solid fa-robot"></i> AI Output</span>
+                        <div class="panel-actions">
+                            <button class="icon-btn" id="bookmarkBtn" title="Bookmark This Note"><i class="fa-regular fa-bookmark"></i></button>
+                            <button class="icon-btn" id="copyBtn" title="Copy to Clipboard"><i class="fa-regular fa-copy"></i></button>
+                        </div>
                     </div>
                     <div id="aiOutput" class="markdown-content empty-state">
                         <i class="fa-solid fa-arrow-left"></i>
-                        <p>Enter your notes on the left and click "Refine" to see the magic.</p>
+                        <p>Enter your notes on the left and click "Refine".</p>
                     </div>
                 </div>
-
             </div>
         </main>
+    </div>
+
+    <div id="settingsModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button id="closeSettings" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label>Gemini API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="Paste key here...">
+                    <p class="hint">Stored locally in your browser.</p>
+                </div>
+                <div class="setting-group danger-zone">
+                    <label>Data Management</label>
+                    <button id="clearDataBtn" class="danger-btn">
+                        <i class="fa-solid fa-trash"></i> Clear History & Saved
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="save-btn" id="saveSettingsBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">
+        <i class="fa-solid fa-circle-check"></i> 
+        <span>Action Successful</span>
     </div>
 
     <script src="script.js"></script>
