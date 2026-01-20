@@ -12,7 +12,7 @@ model_prefix = os.path.join("data", "tokenizer")
 # 3. Vocabulary Size
 # Since your dataset is ~1.88MB, we use 5,000 tokens.
 # This prevents the model from memorizing rare nonsense words.
-vocab_size = 5000 
+vocab_size = 8000 
 
 def train_tokenizer():
     print(f"🚀 Training Tokenizer on {input_file}...")
