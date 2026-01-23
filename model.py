@@ -2,51 +2,49 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-# --- MODEL CONFIGURATION (UPDATED FOR GPU) ---
-d_model = 256       
-n_head = 4          
-n_layer = 4         
-block_size = 256    # <--- CHANGED: Increased from 128 to 256 (Better memory)
-dropout = 0.1       
-
 class Head(nn.Module):
     """ one head of self-attention """
-    def __init__(self, head_size):
+
+    def __init__(self, head_size, n_embd, block_size, dropout):
         super().__init__()
-        self.key = nn.Linear(d_model, head_size, bias=False)
-        self.query = nn.Linear(d_model, head_size, bias=False)
-        self.value = nn.Linear(d_model, head_size, bias=False)
+        self.key = nn.Linear(n_embd, head_size, bias=False)
+        self.query = nn.Linear(n_embd, head_size, bias=False)
+        self.value = nn.Linear(n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         B, T, C = x.shape
-        k = self.key(x)   
-        q = self.query(x) 
-        wei = q @ k.transpose(-2, -1) * C**-0.5 
-        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
-        wei = F.softmax(wei, dim=-1)
+        k = self.key(x)   # (B,T,16)
+        q = self.query(x) # (B,T,16)
+        # compute attention scores ("affinities")
+        wei = q @ k.transpose(-2, -1) * C**-0.5 # (B, T, 16) @ (B, 16, T) -> (B, T, T)
+        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf')) # (B, T, T)
+        wei = F.softmax(wei, dim=-1) # (B, T, T)
         wei = self.dropout(wei)
-        v = self.value(x) 
-        out = wei @ v 
+        v = self.value(x) # (B,T,16)
+        out = wei @ v # (B, T, T) @ (B, T, 16) -> (B, T, 16)
         return out
 
 class MultiHeadAttention(nn.Module):
     """ multiple heads of self-attention in parallel """
-    def __init__(self, num_heads, head_size):
+
+    def __init__(self, num_heads, head_size, n_embd, block_size, dropout):
         super().__init__()
-        self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
-        self.proj = nn.Linear(num_heads * head_size, d_model)
+        self.heads = nn.ModuleList([Head(head_size, n_embd, block_size, dropout) for _ in range(num_heads)])
+        self.proj = nn.Linear(n_embd, n_embd)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
-        out = self.dropout(self.proj(out))
+        out = self.proj(out)
+        out = self.dropout(out)
         return out
 
-class FeedForward(nn.Module):
+class FeedFoward(nn.Module):
     """ a simple linear layer followed by a non-linearity """
-    def __init__(self, n_embd):
+
+    def __init__(self, n_embd, dropout):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(n_embd, 4 * n_embd),
@@ -60,11 +58,12 @@ class FeedForward(nn.Module):
 
 class Block(nn.Module):
     """ Transformer block: communication followed by computation """
-    def __init__(self, n_embd, n_head):
+
+    def __init__(self, n_embd, n_head, block_size, dropout):
         super().__init__()
         head_size = n_embd // n_head
-        self.sa = MultiHeadAttention(n_head, head_size)
-        self.ffwd = FeedForward(n_embd)
+        self.sa = MultiHeadAttention(n_head, head_size, n_embd, block_size, dropout)
+        self.ffwd = FeedFoward(n_embd, dropout)
         self.ln1 = nn.LayerNorm(n_embd)
         self.ln2 = nn.LayerNorm(n_embd)
 
@@ -74,23 +73,26 @@ class Block(nn.Module):
         return x
 
 class EduLLM(nn.Module):
-    """ The Main Language Model """
-    def __init__(self, vocab_size):
+
+    def __init__(self, vocab_size, n_embd=384, n_head=6, n_layer=6, block_size=256, dropout=0.2):
         super().__init__()
-        self.token_embedding_table = nn.Embedding(vocab_size, d_model)
-        self.position_embedding_table = nn.Embedding(block_size, d_model)
-        self.blocks = nn.Sequential(*[Block(d_model, n_head=n_head) for _ in range(n_layer)])
-        self.ln_f = nn.LayerNorm(d_model) 
-        self.lm_head = nn.Linear(d_model, vocab_size)
+        self.block_size = block_size
+        self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
+        self.position_embedding_table = nn.Embedding(block_size, n_embd)
+        self.blocks = nn.Sequential(*[Block(n_embd, n_head, block_size, dropout) for _ in range(n_layer)])
+        self.ln_f = nn.LayerNorm(n_embd) # final layer norm
+        self.lm_head = nn.Linear(n_embd, vocab_size)
 
     def forward(self, idx, targets=None):
         B, T = idx.shape
-        tok_emb = self.token_embedding_table(idx) 
-        pos_emb = self.position_embedding_table(torch.arange(T, device=idx.device)) 
-        x = tok_emb + pos_emb 
-        x = self.blocks(x) 
-        x = self.ln_f(x)   
-        logits = self.lm_head(x) 
+
+        # idx and targets are both (B,T) tensor of integers
+        tok_emb = self.token_embedding_table(idx) # (B,T,C)
+        pos_emb = self.position_embedding_table(torch.arange(T, device=idx.device)) # (T,C)
+        x = tok_emb + pos_emb # (B,T,C)
+        x = self.blocks(x) # (B,T,C)
+        x = self.ln_f(x) # (B,T,C)
+        logits = self.lm_head(x) # (B,T,vocab_size)
 
         if targets is None:
             loss = None
@@ -102,12 +104,23 @@ class EduLLM(nn.Module):
 
         return logits, loss
 
-    def generate(self, idx, max_new_tokens):
+    def generate(self, idx, max_new_tokens, temperature=0.7, top_k=50):
+        # idx is (B, T) array of indices in the current context
         for _ in range(max_new_tokens):
-            idx_cond = idx[:, -block_size:]
-            logits, loss = self(idx_cond)
-            logits = logits[:, -1, :] 
+            # crop context if needed
+            idx_cond = idx[:, -self.block_size:]
+            # get the predictions
+            logits, _ = self(idx_cond)
+            # focus only on the last time step
+            logits = logits[:, -1, :] / temperature
+            # optional: crop to top-k
+            if top_k is not None:
+                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+                logits[logits < v[:, [-1]]] = -float('Inf')
+            # apply softmax to get probabilities
             probs = F.softmax(logits, dim=-1) 
+            # sample from the distribution
             idx_next = torch.multinomial(probs, num_samples=1) 
+            # append sampled index to the running sequence
             idx = torch.cat((idx, idx_next), dim=1) 
         return idx
