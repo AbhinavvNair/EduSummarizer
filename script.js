@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM ELEMENTS
     const userInput = document.getElementById('userInput');
     const aiOutput = document.getElementById('aiOutput');
-    const newNoteBtn = document.getElementById('newNoteBtn');
+    const newNoteBtn = document.getElementById('newNoteBtn'); // Added selector
     const processBtn = document.getElementById('processBtn');
     const visualizeBtn = document.getElementById('visualizeBtn');
     const studyBtn = document.getElementById('studyBtn'); 
@@ -12,74 +12,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const exitFocusBtn = document.getElementById('exitFocusBtn'); 
     const toast = document.getElementById('toast');
     
-    const micBtn = document.getElementById('micBtn'); // NEW
+    // Audio Elements
     const playAudioBtn = document.getElementById('playAudioBtn');
     const stopAudioBtn = document.getElementById('stopAudioBtn');
     const speedBtn = document.getElementById('speedBtn');
     
+    // Layout Elements
     const sidebar = document.getElementById('sidebar');
     const topHeader = document.getElementById('topHeader');
     const outputPanel = document.getElementById('outputPanel');
     const workspace = document.getElementById('workspace');
     
+    // Memory Lists
     const historyList = document.getElementById('historyList');
     const savedList = document.getElementById('savedList');
     loadList('notesHistory', historyList);
     loadList('savedNotes', savedList);
 
-    // --- NEW: SPEECH RECOGNITION (DICTATION) ---
-    // Check if browser supports it
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition;
-    
-    if(SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.continuous = false; // Stop after one sentence
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-
-        micBtn.addEventListener('click', () => {
-            if(micBtn.classList.contains('recording')) {
-                recognition.stop();
-            } else {
-                try {
-                    recognition.start();
-                    micBtn.classList.add('recording');
-                    showToast("Listening...");
-                } catch(e) {
-                    showToast("Error starting mic");
-                }
-            }
-        });
-
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            // Append text with a space if needed
-            userInput.value += (userInput.value.length > 0 ? ' ' : '') + transcript;
-            // Trigger input event to update word count
-            userInput.dispatchEvent(new Event('input'));
-        };
-
-        recognition.onend = () => {
-            micBtn.classList.remove('recording');
-        };
-
-        recognition.onerror = (event) => {
-            micBtn.classList.remove('recording');
-            showToast("Mic Error: " + event.error);
-        };
-    } else {
-        micBtn.style.display = 'none'; // Hide if not supported
-        console.log("Speech Recognition not supported in this browser");
-    }
-
-    // --- NEW NOTE ---
+    // --- NEW NOTE LOGIC (The Fix) ---
     newNoteBtn.addEventListener('click', () => {
+        // 1. Clear Input
         userInput.value = '';
-        aiOutput.innerHTML = `<i class="fa-solid fa-layer-group"></i><p>Result appears here</p>`;
+        
+        // 2. Reset Output to Empty State
+        aiOutput.innerHTML = `
+            <i class="fa-solid fa-layer-group"></i>
+            <p>Result appears here</p>
+        `;
         aiOutput.classList.add('empty-state');
+        
+        // 3. Reset Stats
         document.getElementById('inputStats').innerText = "0 words";
+        
+        // 4. Stop Audio if playing
         window.speechSynthesis.cancel();
+        
         showToast("New Note Started");
     });
 
@@ -127,14 +94,27 @@ document.addEventListener('DOMContentLoaded', () => {
             window.speechSynthesis.speak(speech);
         }
     });
-    speech.onend = () => { isSpeaking = false; playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; };
+
+    speech.onend = () => {
+        isSpeaking = false;
+        playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+    };
 
     // --- FOCUS MODE ---
     focusBtn.addEventListener('click', () => {
-        sidebar.classList.add('hidden'); topHeader.classList.add('hidden'); outputPanel.classList.add('hidden'); workspace.classList.add('zen'); exitFocusBtn.classList.add('show'); showToast("Focus Mode Active");
+        sidebar.classList.add('hidden');
+        topHeader.classList.add('hidden');
+        outputPanel.classList.add('hidden');
+        workspace.classList.add('zen');
+        exitFocusBtn.classList.add('show');
+        showToast("Focus Mode Active");
     });
     exitFocusBtn.addEventListener('click', () => {
-        sidebar.classList.remove('hidden'); topHeader.classList.remove('hidden'); outputPanel.classList.remove('hidden'); workspace.classList.remove('zen'); exitFocusBtn.classList.remove('show');
+        sidebar.classList.remove('hidden');
+        topHeader.classList.remove('hidden');
+        outputPanel.classList.remove('hidden');
+        workspace.classList.remove('zen');
+        exitFocusBtn.classList.remove('show');
     });
 
     // --- TEMPLATES ---
@@ -150,13 +130,16 @@ document.addEventListener('DOMContentLoaded', () => {
     processBtn.addEventListener('click', async () => {
         const text = userInput.value.trim();
         if(!text) { showToast("Enter notes first"); return; }
+        
         processBtn.disabled = true; processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
         await new Promise(r => setTimeout(r, 600)); 
+        
         const refined = smartFormat(text);
         aiOutput.innerHTML = marked.parse(refined);
         aiOutput.classList.remove('empty-state');
         saveToList('notesHistory', text, refined);
         loadList('notesHistory', historyList);
+
         processBtn.disabled = false; processBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Refine';
         showToast("Refined");
     });
@@ -199,7 +182,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // UTILS
     userInput.addEventListener('input', (e) => document.getElementById('inputStats').innerText = `${e.target.value.trim().split(/\s+/).length} words`);
-    function smartFormat(text) { return `# 📝 Refined Notes\n\n${text}`; }
+    
+    function smartFormat(text) { 
+        return `# 📝 Refined Notes\n\n${text}`; 
+    }
+
     function showToast(msg) { toast.innerText = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2000); }
     function saveToList(k, o, r) { let l = JSON.parse(localStorage.getItem(k)) || []; l.unshift({id:Date.now(), title:o.substring(0,15)+"...", o, r}); localStorage.setItem(k, JSON.stringify(l)); }
     function loadList(k, c) {
