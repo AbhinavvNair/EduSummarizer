@@ -1,10 +1,28 @@
 /* --- VARIABLES --- */
+/* --- VARIABLES --- */
 :root {
-    --bg-app: #0F172A; --bg-sidebar: #1E293B; --bg-panel: #1E293B;
-    --bg-input: #0F172A; --text-main: #F8FAFC; --text-muted: #94A3B8;
-    --primary: #818CF8; --primary-hover: #6366F1;
-    --border: #334155; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    --bg-app: #0F172A; 
+    --bg-sidebar: #1E293B; 
+    --bg-panel: #1E293B;
+    --bg-input: #0F172A; 
+    --text-main: #F8FAFC; 
+    --text-muted: #94A3B8;
+    
+    /* Default Brand Colors (Blue) */
+    --primary: #818CF8; 
+    --primary-hover: #6366F1;
+    
+    --border: #334155; 
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    --success: #22c55e;
 }
+
+/* Add smooth transition for theme changes */
+html {
+    transition: --primary 0.5s ease, --primary-hover 0.5s ease;
+}
+
+/* ... rest of your CSS remains the same ... */
 
 * { margin: 0; padding: 0; box-sizing: border-box; transition: all 0.2s ease; }
 body { font-family: 'Outfit', sans-serif; height: 100vh; background-color: var(--bg-app); color: var(--text-main); overflow: hidden; }
