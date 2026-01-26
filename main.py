@@ -37,8 +37,10 @@ try:
     model.to(device)
     model.eval()
     print("✅ Brain Loaded Successfully!")
+    print("🚀 EduLLM is Ready to Serve!")
 except Exception as e:
     print(f"❌ CRITICAL ERROR: {e}")
+    print("Please ensure the model files are in the 'data' directory.")
 
 # --- API REQUEST MODEL ---
 class GenerateRequest(BaseModel):
