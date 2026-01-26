@@ -1,48 +1,53 @@
-# 📘 EduSummariser
+# 📘 EduSummariser — Building a Mini LLM from Scratch
 
-EduSummariser is a **custom-built Language Model developed from scratch using PyTorch**, trained on educational content and deployed as a **web-based LLM-style application**.  
-The project focuses on understanding the **core working of Large Language Models**—from tokenization and self-attention to training, inference, and real-world deployment—while operating under limited computational resources.
+EduSummariser is a **custom-built Language Model developed entirely from scratch using PyTorch**, trained on educational text and deployed as a **full-stack LLM-style web application**.
+
+Unlike API-based projects, this system focuses on understanding the **core internals of Large Language Models**—from tokenization and self-attention to training, inference, and deployment—while operating under **limited computational resources**.
+
+This project demonstrates a complete **ML + NLP + DevOps workflow**, making it both an educational deep dive and a practical engineering system.
 
 ---
 
-## 🚀 Features
+## 🚀 Key Features
 
-- Custom **decoder-only Transformer (GPT-style)** architecture
+- Custom **decoder-only Transformer (GPT-style)** architecture  
 - Educational **text summarization and explanation**
-- **SentencePiece (BPE)** tokenizer for efficient token handling
+- **SentencePiece (BPE)** tokenizer trained from scratch
 - End-to-end **training and inference pipeline**
 - **FastAPI backend** for model serving
 - **Gradio / Streamlit frontend** for interactive usage
 - Fully **Dockerized** application
-- **Cloud deployment** using modern ML platforms
+- **Cloud deployment** on HuggingFace Spaces
+- Designed to work in **low-resource environments**
 
 ---
 
-## 🎯 Project Motivation
+## 🎯 Motivation
 
 Most existing summarization tools either:
-- Use **rule-based techniques** (low quality), or
-- Depend on **closed-source pretrained APIs** (limited learning value)
+- Use **rule-based heuristics** (low quality), or  
+- Depend on **closed-source pretrained APIs** (low learning value)
 
 EduSummariser was built to:
 - Understand LLMs **from first principles**
 - Avoid black-box dependencies
-- Be deployable in **low-resource environments**
-- Demonstrate a complete **ML + DevOps workflow**
+- Explore how far a **small custom model** can go
+- Demonstrate a complete **ML system lifecycle**
+- Learn deployment and DevOps alongside modeling
 
 ---
 
-## 🧠 Objectives
+## 🧠 Project Objectives
 
 ### Primary Objectives
 - Build a **Mini LLM from scratch**
 - Train it on educational datasets
-- Deploy it as a usable **web application**
+- Deploy it as a usable **web-based application**
 
 ### Secondary Objectives
-- Learn tokenizer design
+- Design and train a tokenizer
 - Understand Transformer internals
-- Practice ML deployment and DevOps
+- Practice ML deployment & MLOps workflows
 
 ### Out of Scope
 - Billion-parameter models  
@@ -53,38 +58,39 @@ EduSummariser was built to:
 
 ## 🏗️ System Architecture
 
-
----
-
-## 🛠️ Development Phases
-
-| Phase | Description |
-|------|------------|
-| Phase 0 | Environment Setup |
-| Phase 1 | Dataset Collection & Cleaning |
-| Phase 2 | Tokenizer Design |
-| Phase 3 | Model Architecture |
-| Phase 4 | Training Pipeline |
-| Phase 5 | Inference Logic |
-| Phase 6 | Backend API |
-| Phase 7 | Frontend UI |
-| Phase 8 | Dockerization |
-| Phase 9 | Cloud Deployment |
+1. Raw educational text ingestion  
+2. SentencePiece tokenizer training (BPE)  
+3. Decoder-only Transformer model  
+4. Next-token prediction training  
+5. Inference & text generation  
+6. FastAPI-based serving layer  
+7. Web UI (Gradio / Streamlit)  
+8. Docker + Cloud deployment  
 
 ---
 
 ## 🧩 Model Architecture
 
-- Decoder-only Transformer
-- Token Embeddings
-- Positional Embeddings
-- Multi-Head Self Attention
-- Feed Forward Neural Networks
-- Residual Connections
-- Layer Normalization
-- Linear Output Projection
+The model follows a **GPT-style decoder-only Transformer**:
 
-This architecture was chosen for **simplicity, clarity, and efficiency**.
+- Token Embeddings  
+- Positional Embeddings  
+- Multi-Head Self-Attention (causal masking)  
+- Feed-Forward Neural Networks  
+- Residual Connections  
+- Layer Normalization (Pre-LN)  
+- Linear Output Projection  
+
+This architecture was chosen for **simplicity, interpretability, and efficiency**.
+
+---
+
+## 🧠 Transformer Internals (Conceptual Overview)
+
+- **Self-Attention**: Captures contextual relationships across educational text  
+- **Causal Masking**: Ensures autoregressive token generation  
+- **Weight Sharing**: Reduces parameter count and improves generalization  
+- **Pre-LayerNorm**: Improves training stability for deeper networks  
 
 ---
 
@@ -96,14 +102,11 @@ This architecture was chosen for **simplicity, clarity, and efficiency**.
 - Lecture notes
 - Open educational blogs
 
-### Preprocessing
-- Removal of HTML tags and noise
-- Text normalization
-- Sentence cleanup
-- Single merged training corpus
-
-**Output File:**  
-
+### Preprocessing Steps
+- HTML and noise removal  
+- Text normalization  
+- Sentence cleanup  
+- Single merged training corpus  
 
 ---
 
@@ -111,50 +114,65 @@ This architecture was chosen for **simplicity, clarity, and efficiency**.
 
 - Implemented using **SentencePiece (BPE)**
 - Efficient handling of rare and unknown words
-- Industry-standard tokenizer for LLMs
-
-**Files Generated:**
-
+- Industry-standard tokenizer design used in modern LLMs
 
 ---
 
 ## 🏋️ Training Pipeline
 
-- Framework: PyTorch
-- Training Objective: Next-token prediction
-- Loss Function: Cross Entropy Loss
-- Optimizer: AdamW
+- Framework: **PyTorch**
+- Objective: **Next-token prediction**
+- Loss Function: **Cross Entropy Loss**
+- Optimizer: **AdamW**
 - Training Environment: Google Colab / Kaggle GPU
 - Model Storage: HuggingFace Hub
 
 ---
 
-## 🌐 Backend API
+## 📊 Evaluation
 
-The backend is built using **FastAPI**.
+The model is evaluated using standard summarization metrics:
 
-### API Endpoints
+- **ROUGE-1**
+- **ROUGE-2**
+- **ROUGE-L**
 
+Baseline comparisons include:
+- Lead-3 summarization
+- TF-IDF-based summarizer
+
+These benchmarks help validate model quality despite limited scale.
 
 ---
 
-## ☁️ Cloud Deployment
+## 🌐 Backend API
 
-- Frontend: HuggingFace Spaces
-- Backend: Render / Railway
-- Model Hosting: HuggingFace Hub
+The backend is implemented using **FastAPI**.
 
-This makes the application **hardware-independent and publicly accessible**.
+### Features
+- Model loading and inference
+- REST-based summarization endpoints
+- Interactive API documentation via Swagger UI
+
+---
+
+## ☁️ Deployment
+
+- Frontend: **HuggingFace Spaces**
+- Backend: **Render / Railway**
+- Model Hosting: **HuggingFace Hub**
+
+The application is fully cloud-hosted and hardware-independent.
 
 ---
 
 ## 🔄 Backup Plan (Plan B)
 
-- Tool Used: LlamaIndex
+- Tool: **LlamaIndex**
 - Purpose:
   - Fallback solution
   - Performance comparison
-  - Project reliability assurance
+  - Reliability assurance
 
 ---
 
@@ -187,15 +205,6 @@ This makes the application **hardware-independent and publicly accessible**.
 
 ---
 
-## 🧪 Testing
-
-- Manual prompt testing
-- Output validation
-- API testing using Postman / curl
-- UI testing via browser
-
----
-
 ## ⚠️ Limitations
 
 - Small model size
@@ -218,52 +227,4 @@ These limitations are acceptable for an **academic and learning-focused project*
 
 ---
 
-## 📌 Project Summary
-
-**EduSummariser is a small custom Language Model built from scratch using PyTorch, trained on educational text, and deployed as an LLM-style web application using modern cloud and DevOps tools.**
-
----
-## 🚀 How to Run EduSummariser
-
-### 1. Environment Setup
-Clone the repository and create a virtual environment:
-
-```
-git clone "https://github.com/AbhinavvNair/EduSummarizer.git"
-cd EduSummarizer
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 2. Verify Model Files
-Ensure your trained model and tokenizer are in the data/ directory:
-```
-data/edullm_model.pt (Weights)
-data/tokenizer.model (SentencePiece model)
-```
-
-### 3. Launch the Web Application
-Run the backend server using Uvicorn. This will serve both the AI API and the HTML frontend:
-```
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### 4. Access the Interface
-Open your browser and navigate to:
-```
-UI: http://localhost:8000
-API Docs: http://localhost:8000/docs
-```
----
-## 🤝 Contributing
-
-Contributions are welcome.  
-Feel free to open issues or submit pull requests.
-
----
-
-## ⭐ Support
-
-If you find this project helpful, consider giving it a ⭐ on GitHub.
 
