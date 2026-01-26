@@ -227,4 +227,35 @@ These limitations are acceptable for an **academic and learning-focused project*
 
 ---
 
+## 🚀 How to Run EduSummariser
 
+### 1. Environment Setup
+Clone the repository and create a virtual environment:
+
+```
+git clone "https://github.com/AbhinavvNair/EduSummarizer.git"
+cd EduSummarizer
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 2. Verify Model Files
+Ensure your trained model and tokenizer are in the data/ directory:
+```
+data/edullm_model.pt (Weights)
+data/tokenizer.model (SentencePiece model)
+```
+
+### 3. Launch the Web Application
+Run the backend server using Uvicorn. This will serve both the AI API and the HTML frontend:
+```
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 4. Access the Interface
+Open your browser and navigate to:
+```
+UI: http://localhost:8000
+API Docs: http://localhost:8000/docs
+```
