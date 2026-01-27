@@ -1,8 +1,16 @@
+# Machine Learning & Data
 torch
 sentencepiece
-fastapi
-uvicorn
-pydantic
 numpy
 datasets
 tqdm
+
+# API & Server
+fastapi
+uvicorn
+pydantic
+python-multipart
+
+# Groq Specific
+groq
+python-dotenv

@@ -1,9 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Mermaid (Charts)
     mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
     // --- DOM ELEMENTS ---
     const userInput = document.getElementById('userInput');
     const aiOutput = document.getElementById('aiOutput');
+    
+    // Buttons
     const newNoteBtn = document.getElementById('newNoteBtn');
     const processBtn = document.getElementById('processBtn');
     const visualizeBtn = document.getElementById('visualizeBtn');
@@ -12,48 +15,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const exitFocusBtn = document.getElementById('exitFocusBtn'); 
     const toast = document.getElementById('toast');
     
+    // Audio / Voice
     const micBtn = document.getElementById('micBtn');
     const playAudioBtn = document.getElementById('playAudioBtn');
     const stopAudioBtn = document.getElementById('stopAudioBtn');
     const speedBtn = document.getElementById('speedBtn');
     
+    // Layout
     const sidebar = document.getElementById('sidebar');
     const topHeader = document.getElementById('topHeader');
     const outputPanel = document.getElementById('outputPanel');
     const workspace = document.getElementById('workspace');
     
+    // Storage Lists
     const historyList = document.getElementById('historyList');
     const savedList = document.getElementById('savedList');
     
+    // Command Palette
     const cmdPalette = document.getElementById('cmdPalette');
     const cmdInput = document.getElementById('cmdInput');
     const cmdResults = document.getElementById('cmdResults');
 
-    // --- INITIALIZATION ---
+    // --- INITIAL LOAD ---
     loadList('notesHistory', historyList);
     loadList('savedNotes', savedList);
     
-    // 1. LOAD SAVED THEME (New!)
+    // Load Saved Theme
     const savedTheme = localStorage.getItem('userTheme');
     if(savedTheme) {
         const theme = JSON.parse(savedTheme);
-        setTheme(theme.primary, theme.hover, false); // false = don't show toast on load
+        setTheme(theme.primary, theme.hover, false);
     }
 
     // ==========================================
-    // 1. THEME ENGINE (NEW!)
+    // 1. THEME ENGINE
     // ==========================================
     function setTheme(primary, hover, notify = true) {
         document.documentElement.style.setProperty('--primary', primary);
         document.documentElement.style.setProperty('--primary-hover', hover);
         localStorage.setItem('userTheme', JSON.stringify({ primary, hover }));
-        
-        // Update Chart/Mermaid colors dynamically if needed (re-init often required, but simple css var works for UI)
         if(notify) showToast("Theme Updated");
     }
 
     // ==========================================
-    // 2. COMMAND PALETTE
+    // 2. COMMAND PALETTE (GOD MODE)
     // ==========================================
     function togglePalette() {
         if(!cmdPalette) return;
@@ -83,9 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
         cmdPalette.addEventListener('click', (e) => { if (e.target === cmdPalette) togglePalette(); });
     }
 
-    // UPDATED ACTIONS LIST WITH THEMES
+    // --- ACTION MEGA PACK ---
     const actions = [
-        // Core Actions
+        // Core Tools
         { title: "New Note", icon: "fa-plus", tag: "Action", action: () => newNoteBtn.click() },
         { title: "Focus Mode", icon: "fa-expand", tag: "View", action: () => focusBtn.click() },
         { title: "Podcast Play", icon: "fa-play", tag: "Audio", action: () => playAudioBtn.click() },
@@ -93,14 +98,26 @@ document.addEventListener('DOMContentLoaded', () => {
         { title: "Visualize", icon: "fa-diagram-project", tag: "Tool", action: () => visualizeBtn.click() },
         { title: "Study Cards", icon: "fa-graduation-cap", tag: "Study", action: () => studyBtn.click() },
         
-        // NEW: THEMES
+        // --- THEMES: Blues & Purples ---
         { title: "Theme: Default Blue", icon: "fa-droplet", tag: "Theme", action: () => setTheme('#818CF8', '#6366F1') },
+        { title: "Theme: Electric Violet", icon: "fa-bolt", tag: "Theme", action: () => setTheme('#a78bfa', '#8b5cf6') },
+        { title: "Theme: Deep Ocean", icon: "fa-water", tag: "Theme", action: () => setTheme('#38bdf8', '#0ea5e9') },
+        
+        // --- THEMES: Greens & Teals ---
         { title: "Theme: Hacker Green", icon: "fa-terminal", tag: "Theme", action: () => setTheme('#34d399', '#10b981') },
-        { title: "Theme: Cyberpunk Pink", icon: "fa-bolt", tag: "Theme", action: () => setTheme('#ec4899', '#db2777') },
-        { title: "Theme: Royal Gold", icon: "fa-crown", tag: "Theme", action: () => setTheme('#fbbf24', '#d97706') },
-        { title: "Theme: Crimson Red", icon: "fa-fire", tag: "Theme", action: () => setTheme('#f87171', '#dc2626') },
+        { title: "Theme: Mint Fresh", icon: "fa-leaf", tag: "Theme", action: () => setTheme('#2dd4bf', '#14b8a6') },
+        { title: "Theme: Toxic Lime", icon: "fa-biohazard", tag: "Theme", action: () => setTheme('#a3e635', '#84cc16') },
+        
+        // --- THEMES: Warm Colors ---
+        { title: "Theme: Cyberpunk Pink", icon: "fa-backward", tag: "Theme", action: () => setTheme('#f472b6', '#ec4899') },
+        { title: "Theme: Crimson Red", icon: "fa-fire", tag: "Theme", action: () => setTheme('#f87171', '#ef4444') },
+        { title: "Theme: Sunset Orange", icon: "fa-sun", tag: "Theme", action: () => setTheme('#fb923c', '#f97316') },
+        { title: "Theme: Royal Gold", icon: "fa-crown", tag: "Theme", action: () => setTheme('#fbbf24', '#f59e0b') },
+        
+        // --- THEMES: Monochrome ---
+        { title: "Theme: Zen Gray", icon: "fa-mountain", tag: "Theme", action: () => setTheme('#94a3b8', '#64748b') },
 
-        // Data
+        // Data Management
         { title: "Clear History", icon: "fa-trash", tag: "Data", action: () => { localStorage.removeItem('notesHistory'); location.reload(); } }
     ];
 
@@ -158,10 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 3. CORE LOGIC (Mic, Audio, Code, etc.)
+    // 3. CORE FEATURES (Mic, Audio, Code)
     // ==========================================
     
-    // SPEECH
+    // SPEECH RECOGNITION
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
     if(SpeechRecognition && micBtn) {
@@ -189,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast("New Note Started");
     });
 
-    // AUDIO
+    // AUDIO PLAYBACK (PODCAST MODE)
     let speech = new SpeechSynthesisUtterance();
     let isSpeaking = false;
     let speeds = [1, 1.5, 2];
@@ -213,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     speech.onend = () => { isSpeaking = false; playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; };
 
-    // FOCUS
+    // FOCUS MODE
     focusBtn.addEventListener('click', () => {
         sidebar.classList.add('hidden'); topHeader.classList.add('hidden'); outputPanel.classList.add('hidden'); workspace.classList.add('zen'); exitFocusBtn.classList.add('show'); showToast("Focus Mode Active");
     });
@@ -231,69 +248,32 @@ document.addEventListener('DOMContentLoaded', () => {
         userInput.value = txt; userInput.focus();
     };
 
-    // ==========================================
-    // 3. CORE LOGIC (REFINE - CONNECTED TO BACKEND)
-    // ==========================================
+    // REFINE TEXT (AI & MATH & CODE)
     processBtn.addEventListener('click', async () => {
         const text = userInput.value.trim();
         if(!text) { showToast("Enter notes first"); return; }
-
-        // 1. UI Loading State
-        processBtn.disabled = true; 
-        processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        aiOutput.innerHTML = '<div class="empty-state"><i class="fa-solid fa-brain fa-pulse"></i><p>NeuroNotes is thinking...</p></div>';
-        aiOutput.classList.remove('empty-state');
-
-        try {
-            // 2. FETCH FROM FASTAPI BACKEND
-            const response = await fetch('http://127.0.0.1:8000/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    prompt: text,
-                    max_tokens: 200,
-                    temperature: 0.7
-                })
-            });
-
-            if (!response.ok) throw new Error('Backend unreachable');
-
-            const data = await response.json();
-            const refined = data.response; // This is the AI output from main.py
-
-            // 3. RENDER RESULT (Using your existing plugins)
-            aiOutput.innerHTML = marked.parse(refined);
-            
-            // Re-run MathJax/KaTeX if present
-            if(window.renderMathInElement) {
-                renderMathInElement(aiOutput, { 
-                    delimiters: [
-                        {left: "$$", right: "$$", display: true}, 
-                        {left: "$", right: "$", display: false}
-                    ] 
-                });
-            }
-
-            // 4. POST-PROCESS
-            enableLiveCode();
-            saveToList('notesHistory', text, refined);
-            loadList('notesHistory', historyList);
-            showToast("AI Refinement Complete");
-
-        } catch (error) {
-            console.error("AI Error:", error);
-            aiOutput.innerHTML = `<p style="color:#ef4444; padding:20px;">Connection Error: Ensure main.py is running.</p>`;
-            showToast("Brain Link Failed");
-        } finally {
-            // 5. RESET UI
-            processBtn.disabled = false; 
-            processBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Refine';
+        
+        processBtn.disabled = true; processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        await new Promise(r => setTimeout(r, 600)); 
+        
+        const refined = smartFormat(text);
+        aiOutput.innerHTML = marked.parse(refined);
+        
+        // Render Math (KaTeX)
+        if(window.renderMathInElement) {
+            renderMathInElement(aiOutput, { delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}] });
         }
+        
+        aiOutput.classList.remove('empty-state');
+        enableLiveCode();
+        
+        saveToList('notesHistory', text, refined);
+        loadList('notesHistory', historyList);
+        processBtn.disabled = false; processBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Refine';
+        showToast("Refined");
     });
 
-    // LIVE CODE
+    // LIVE CODE RUNNER
     function enableLiveCode() {
         const codes = aiOutput.querySelectorAll('pre code.language-javascript');
         codes.forEach(block => {
@@ -310,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 outputDiv.classList.add('show'); outputDiv.innerText = "";
                 const oldLog = console.log; const logs = [];
                 console.log = (...args) => { logs.push(args.join(' ')); };
-                try { eval(code); outputDiv.innerText = logs.length > 0 ? logs.join('\n') : "Done (No output)"; outputDiv.style.color = "#22c55e"; } 
+                try { eval(code); outputDiv.innerText = logs.length > 0 ? logs.join('\n') : "Done (No output)"; outputDiv.style.color = "var(--success)"; } 
                 catch (err) { outputDiv.innerText = "Error: " + err.message; outputDiv.style.color = "#ef4444"; }
                 console.log = oldLog;
             });
@@ -333,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { aiOutput.innerHTML = `<p style="color:#ef4444; padding:20px;">Syntax Error</p>`; }
     });
 
-    // STUDY
+    // STUDY MODE
     let cards = []; let cardIndex = 0;
     studyBtn.addEventListener('click', () => {
         const text = userInput.value.trim();
