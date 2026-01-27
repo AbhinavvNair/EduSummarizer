@@ -231,21 +231,66 @@ document.addEventListener('DOMContentLoaded', () => {
         userInput.value = txt; userInput.focus();
     };
 
-    // REFINE
+    // ==========================================
+    // 3. CORE LOGIC (REFINE - CONNECTED TO BACKEND)
+    // ==========================================
     processBtn.addEventListener('click', async () => {
         const text = userInput.value.trim();
         if(!text) { showToast("Enter notes first"); return; }
-        processBtn.disabled = true; processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        await new Promise(r => setTimeout(r, 600)); 
-        const refined = smartFormat(text);
-        aiOutput.innerHTML = marked.parse(refined);
-        if(window.renderMathInElement) renderMathInElement(aiOutput, { delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}] });
+
+        // 1. UI Loading State
+        processBtn.disabled = true; 
+        processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        aiOutput.innerHTML = '<div class="empty-state"><i class="fa-solid fa-brain fa-pulse"></i><p>NeuroNotes is thinking...</p></div>';
         aiOutput.classList.remove('empty-state');
-        enableLiveCode();
-        saveToList('notesHistory', text, refined);
-        loadList('notesHistory', historyList);
-        processBtn.disabled = false; processBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Refine';
-        showToast("Refined");
+
+        try {
+            // 2. FETCH FROM FASTAPI BACKEND
+            const response = await fetch('http://127.0.0.1:8000/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt: text,
+                    max_tokens: 200,
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) throw new Error('Backend unreachable');
+
+            const data = await response.json();
+            const refined = data.response; // This is the AI output from main.py
+
+            // 3. RENDER RESULT (Using your existing plugins)
+            aiOutput.innerHTML = marked.parse(refined);
+            
+            // Re-run MathJax/KaTeX if present
+            if(window.renderMathInElement) {
+                renderMathInElement(aiOutput, { 
+                    delimiters: [
+                        {left: "$$", right: "$$", display: true}, 
+                        {left: "$", right: "$", display: false}
+                    ] 
+                });
+            }
+
+            // 4. POST-PROCESS
+            enableLiveCode();
+            saveToList('notesHistory', text, refined);
+            loadList('notesHistory', historyList);
+            showToast("AI Refinement Complete");
+
+        } catch (error) {
+            console.error("AI Error:", error);
+            aiOutput.innerHTML = `<p style="color:#ef4444; padding:20px;">Connection Error: Ensure main.py is running.</p>`;
+            showToast("Brain Link Failed");
+        } finally {
+            // 5. RESET UI
+            processBtn.disabled = false; 
+            processBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Refine';
+        }
     });
 
     // LIVE CODE
