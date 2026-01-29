@@ -5,30 +5,32 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-from groq import Groq
+from openai import OpenAI  # We still use this as Groq is OpenAI-compatible
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
-# --- CONFIGURATION ---
-# Fetches the key from your .env file
-API_KEY = os.getenv("GROQ_API_KEY")
+# Using your specific variable name
+API_KEY = os.getenv("GROQ_API_KEY") 
 
 model_context = {}
 
-# --- LIFESPAN MANAGER ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("🔌 Connecting to Groq Cloud...")
+    print("🔌 Initializing NeuroNotes Pro...")
     if not API_KEY:
-        print("❌ ERROR: GROQ_API_KEY not found in .env file!")
-    try:
-        client = Groq(api_key=API_KEY)
-        model_context['client'] = client
-        print("🚀 EduSummarizer (Groq-powered) is Ready!")
-    except Exception as e:
-        print(f"❌ CRITICAL ERROR: {e}")
+        print("❌ ERROR: 'GROQ_API_KEY' not found in .env!")
+    else:
+        try:
+            # POINTING TO GROQ ENDPOINT
+            client = OpenAI(
+                api_key=API_KEY,
+                base_url="https://api.groq.com/openai/v1", 
+            )
+            model_context['client'] = client
+            print("🚀 Groq AI Client successfully initialized!")
+        except Exception as e:
+            print(f"❌ CRITICAL ERROR: {e}")
     yield
     model_context.clear()
 
@@ -41,51 +43,45 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- SERVE FRONTEND ---
+class GenerateRequest(BaseModel):
+    prompt: str
+    max_tokens: int = 1000
+    temperature: float = 0.7
+
 @app.get("/")
 async def read_index():
     return FileResponse('index.html')
 
-app.mount("/static", StaticFiles(directory="./"), name="static")
-
-# --- DATA MODELS ---
-class GenerateRequest(BaseModel):
-    prompt: str
-    max_tokens: int = 150
-    temperature: float = 0.7
-
-# --- AI ENDPOINT ---
 @app.post("/generate")
 async def generate_text(request: GenerateRequest):
     client = model_context.get('client')
-
     if not client:
-        raise HTTPException(status_code=503, detail="Groq client not initialized.")
+        raise HTTPException(status_code=503, detail="AI Client not initialized.")
 
     try:
-        # Groq API Call
+        print(f"📡 Sending request to Groq: {request.prompt[:50]}...")
+        
+        # CHANGED MODEL TO A VALID GROQ MODEL
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.3-70b-versatile", 
             messages=[
                 {
                     "role": "system", 
-                    "content": "You are a helpful assistant that summarizes educational content."
+                    "content": "You are NeuroNotes Pro. Summarize educational content with clean Markdown, bold key terms, and LaTeX ($$)."
                 },
-                {
-                    "role": "user", 
-                    "content": f"Summarize the following text:\n\n{request.prompt}"
-                }
+                {"role": "user", "content": request.prompt}
             ],
             temperature=request.temperature,
             max_tokens=request.max_tokens,
         )
-
-        summary = completion.choices[0].message.content.strip()
-        return {"response": summary}
+        
+        return {"response": completion.choices[0].message.content}
 
     except Exception as e:
-        print(f"Groq Generation Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"❌ Groq API Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Groq API Error: {str(e)}")
+
+app.mount("/", StaticFiles(directory="./"), name="static")
 
 if __name__ == "__main__":
     import uvicorn

@@ -6,18 +6,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInput = document.getElementById('userInput');
     const aiOutput = document.getElementById('aiOutput');
     const processBtn = document.getElementById('processBtn');
-    const newNoteBtn = document.getElementById('newNoteBtn');
-    const visualizeBtn = document.getElementById('visualizeBtn');
     const historyList = document.getElementById('historyList');
     const toast = document.getElementById('toast');
 
-    // --- 1. CORE AI LOGIC (Connecting to FastAPI) ---
+    // --- 1. CORE AI LOGIC ---
     processBtn.addEventListener('click', async () => {
         const text = userInput.value.trim();
         if(!text) { showToast("Enter notes first"); return; }
         
         processBtn.disabled = true; 
-        processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Thinking...';
+        processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Grok is thinking...';
         
         try {
             const response = await fetch("http://127.0.0.1:8000/generate", {
@@ -25,34 +23,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     prompt: text,
-                    max_tokens: 800,
+                    max_tokens: 1000,
                     temperature: 0.7
                 }),
             });
 
-            if (!response.ok) throw new Error("Server error. Is main.py running?");
+            if (!response.ok) throw new Error("Backend server error. Ensure main.py is running.");
 
             const data = await response.json();
             const refined = data.response; 
 
-            // Update UI with Markdown
+            // Render Markdown
             aiOutput.innerHTML = marked.parse(refined);
             
             // Render Math (KaTeX)
             if(window.renderMathInElement) {
                 renderMathInElement(aiOutput, { 
-                    delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}] 
+                    delimiters: [
+                        {left: "$$", right: "$$", display: true}, 
+                        {left: "$", right: "$", display: false}
+                    ],
+                    throwOnError: false
                 });
             }
             
             aiOutput.classList.remove('empty-state');
-            
-            // FIX: Re-enable the missing functions
-            enableLiveCode();
+            enableLiveCode(); // Attach run buttons to any JS blocks
             
             saveToList('notesHistory', text, refined);
             loadList('notesHistory', historyList);
-            showToast("Groq Refinement Complete");
+            showToast("Grok Refinement Complete");
 
         } catch (error) {
             console.error("API Error:", error);
@@ -63,10 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- 2. LIVE CODE RUNNER (The missing function) ---
+    // --- 2. LIVE CODE RUNNER ---
     function enableLiveCode() {
-        const codes = aiOutput.querySelectorAll('pre code.language-javascript');
+        // Look for all code blocks
+        const codes = aiOutput.querySelectorAll('pre code');
         codes.forEach(block => {
+            // Only add run button if it's JS and doesn't already have one
+            if(!block.className.includes('language-javascript')) return;
             const pre = block.parentElement;
             if(pre.querySelector('.run-btn')) return; 
 
@@ -84,50 +87,51 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', () => {
                 const code = block.innerText;
                 outputDiv.classList.add('show'); 
-                outputDiv.innerText = "";
+                outputDiv.innerText = "Running...";
+                
                 const oldLog = console.log; 
                 const logs = [];
                 console.log = (...args) => { logs.push(args.join(' ')); };
                 
                 try { 
                     eval(code); 
-                    outputDiv.innerText = logs.length > 0 ? logs.join('\n') : "Done (No output)"; 
-                    outputDiv.style.color = "var(--success)"; 
+                    outputDiv.innerText = logs.length > 0 ? logs.join('\n') : "Executed successfully (No output)"; 
+                    outputDiv.style.color = "#10b981"; // success color
                 } catch (err) { 
                     outputDiv.innerText = "Error: " + err.message; 
-                    outputDiv.style.color = "#ef4444"; 
+                    outputDiv.style.color = "#ef4444"; // error color
                 }
                 console.log = oldLog;
             });
         });
     }
 
-    // --- 3. EXPORT & UTILS ---
+    // --- 3. UTILS & EXPORT ---
     window.downloadPDF = () => {
         if (aiOutput.classList.contains('empty-state')) {
             showToast("Nothing to download");
             return;
         }
         const opt = {
-            margin: 1,
+            margin: 0.5,
             filename: 'EduSummary.pdf',
-            html2canvas: { scale: 2 },
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
         };
         html2pdf().set(opt).from(aiOutput).save();
-        showToast("Downloading PDF...");
     };
 
     function showToast(msg) { 
         toast.innerText = msg; 
         toast.classList.add('show'); 
-        setTimeout(() => toast.classList.remove('show'), 2000); 
+        setTimeout(() => toast.classList.remove('show'), 3000); 
     }
 
     function saveToList(k, o, r) { 
         let l = JSON.parse(localStorage.getItem(k)) || []; 
-        l.unshift({id:Date.now(), title:o.substring(0,15)+"...", o, r}); 
-        localStorage.setItem(k, JSON.stringify(l)); 
+        l.unshift({id: Date.now(), title: o.substring(0, 20) + "...", o, r}); 
+        localStorage.setItem(k, JSON.stringify(l.slice(0, 10))); // Keep last 10
     }
 
     function loadList(k, c) {
@@ -136,11 +140,11 @@ document.addEventListener('DOMContentLoaded', () => {
         c.innerHTML = '';
         l.forEach(i => {
             let el = document.createElement('div'); 
-            el.className='list-item'; 
-            el.innerText=i.title;
+            el.className = 'list-item'; 
+            el.innerText = i.title;
             el.onclick = () => { 
-                userInput.value=i.o; 
-                aiOutput.innerHTML=marked.parse(i.r); 
+                userInput.value = i.o; 
+                aiOutput.innerHTML = marked.parse(i.r); 
                 aiOutput.classList.remove('empty-state');
                 enableLiveCode();
             };
@@ -148,17 +152,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Initial Load
+    // Initial load of history
     loadList('notesHistory', historyList);
     
-    // Set Template Utility
+    // Global template helper
     window.setTemplate = (type) => {
-        let txt = "";
-        if(type === 'general') txt = "Topic: \n\nKey Points:\n- ";
-        if(type === 'flashcard') txt = "Term : Definition";
-        if(type === 'code') txt = "```javascript\nconsole.log('Hello World');\n```";
-        if(type === 'math') txt = "$$ E = mc^2 $$";
-        userInput.value = txt; 
+        const templates = {
+            general: "Topic: \n\nKey Points:\n- ",
+            flashcard: "Term : Definition",
+            code: "```javascript\n// Write code here\nconsole.log('Test');\n```",
+            math: "Solve this: $$ x^2 + y^2 = r^2 $$"
+        };
+        userInput.value = templates[type] || ""; 
         userInput.focus();
     };
 });
