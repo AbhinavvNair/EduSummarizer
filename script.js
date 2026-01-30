@@ -15,15 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const exitFocusBtn = document.getElementById('exitFocusBtn'); 
     const toast = document.getElementById('toast');
     
-    // Command Palette Elements
+    // GOD MODE ELEMENTS
     const cmdPalette = document.getElementById('cmdPalette');
     const cmdInput = document.getElementById('cmdInput');
     const cmdResults = document.getElementById('cmdResults');
 
-    // Mic Button
     const micBtn = document.getElementById('micBtn');
-
-    // Layout
     const sidebar = document.getElementById('sidebar');
     const topHeader = document.getElementById('topHeader');
     const outputPanel = document.getElementById('outputPanel');
@@ -33,22 +30,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyList = document.getElementById('historyList');
     const savedList = document.getElementById('savedList');
 
-    // Load Data
+    // Load Data & Saved Theme
     loadList('notesHistory', historyList);
     loadList('savedNotes', savedList);
+    
+    const savedTheme = localStorage.getItem('userTheme');
+    if(savedTheme) {
+        const theme = JSON.parse(savedTheme);
+        setTheme(theme.primary, theme.hover, false);
+    }
 
     // ==========================================
-    // 1. COMMAND PALETTE (CTRL + K)
+    // 1. GOD MODE (CTRL + K)
     // ==========================================
     
-    // Toggle Logic
-    function togglePalette() {
+    function toggleGodMode() {
         if(!cmdPalette) return;
         const isHidden = cmdPalette.classList.contains('hidden');
         if (isHidden) {
             cmdPalette.classList.remove('hidden');
             setTimeout(() => cmdPalette.classList.add('show'), 10);
             cmdInput.value = '';
+            cmdInput.placeholder = "GOD MODE: Waiting for command...";
             cmdInput.focus();
             renderCommands(''); 
         } else {
@@ -59,37 +62,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
+        // Trigger God Mode
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
             e.preventDefault();
-            togglePalette();
+            toggleGodMode();
         }
+        // Close on Escape
         if (e.key === 'Escape' && cmdPalette && !cmdPalette.classList.contains('hidden')) {
-            togglePalette();
+            toggleGodMode();
         }
     });
 
     // Close on overlay click
     if(cmdPalette) {
         cmdPalette.addEventListener('click', (e) => {
-            if (e.target === cmdPalette) togglePalette();
+            if (e.target === cmdPalette) toggleGodMode();
         });
     }
 
-    // Define All Actions
+    // --- THEME ENGINE ---
+    function setTheme(primary, hover, notify = true) {
+        document.documentElement.style.setProperty('--primary', primary);
+        document.documentElement.style.setProperty('--primary-hover', hover);
+        localStorage.setItem('userTheme', JSON.stringify({ primary, hover }));
+        if(notify) showToast("Theme Updated");
+    }
+
+    // --- GOD MODE ACTIONS (The Mega List) ---
     const actions = [
+        // Core Tools
         { title: "New Note", icon: "fa-plus", tag: "Action", action: () => newNoteBtn.click() },
-        { title: "Refine Text", icon: "fa-wand-magic-sparkles", tag: "AI", action: () => processBtn.click() },
+        { title: "Refine Text (AI)", icon: "fa-wand-magic-sparkles", tag: "AI", action: () => processBtn.click() },
         { title: "Focus Mode", icon: "fa-expand", tag: "View", action: () => focusBtn.click() },
         { title: "Visualize Diagram", icon: "fa-diagram-project", tag: "Tool", action: () => visualizeBtn.click() },
         { title: "Study Flashcards", icon: "fa-graduation-cap", tag: "Study", action: () => studyBtn.click() },
+        
+        // --- THEME PACK (God Mode Exclusive) ---
+        // Blues & Purples
+        { title: "Theme: Default Blue", icon: "fa-droplet", tag: "Theme", action: () => setTheme('#818CF8', '#6366F1') },
+        { title: "Theme: Electric Violet", icon: "fa-bolt", tag: "Theme", action: () => setTheme('#a78bfa', '#8b5cf6') },
+        { title: "Theme: Deep Ocean", icon: "fa-water", tag: "Theme", action: () => setTheme('#38bdf8', '#0ea5e9') },
+        
+        // Greens & Teals
+        { title: "Theme: Hacker Green", icon: "fa-terminal", tag: "Theme", action: () => setTheme('#34d399', '#10b981') },
+        { title: "Theme: Mint Fresh", icon: "fa-leaf", tag: "Theme", action: () => setTheme('#2dd4bf', '#14b8a6') },
+        { title: "Theme: Toxic Lime", icon: "fa-biohazard", tag: "Theme", action: () => setTheme('#a3e635', '#84cc16') },
+        
+        // Warm Colors
+        { title: "Theme: Cyberpunk Pink", icon: "fa-backward", tag: "Theme", action: () => setTheme('#f472b6', '#ec4899') },
+        { title: "Theme: Crimson Red", icon: "fa-fire", tag: "Theme", action: () => setTheme('#f87171', '#ef4444') },
+        { title: "Theme: Sunset Orange", icon: "fa-sun", tag: "Theme", action: () => setTheme('#fb923c', '#f97316') },
+        { title: "Theme: Royal Gold", icon: "fa-crown", tag: "Theme", action: () => setTheme('#fbbf24', '#f59e0b') },
+        
+        // Monochrome
+        { title: "Theme: Zen Gray", icon: "fa-mountain", tag: "Theme", action: () => setTheme('#94a3b8', '#64748b') },
+
+        // Data
         { title: "Clear History", icon: "fa-trash", tag: "Data", action: () => { if(confirm("Clear history?")) { localStorage.removeItem('notesHistory'); location.reload(); } } }
     ];
 
     // Search Logic
     if(cmdInput) {
         cmdInput.addEventListener('input', (e) => renderCommands(e.target.value));
-        
-        // Enter key to select first result
         cmdInput.addEventListener('keydown', (e) => {
             if(e.key === 'Enter') {
                 const selected = document.querySelector('.cmd-item');
@@ -103,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cmdResults.innerHTML = '';
         const q = query.toLowerCase();
         
-        // Get History for Search
+        // Include History in God Mode
         let history = (JSON.parse(localStorage.getItem('notesHistory')) || []).map(h => ({
             title: h.title,
             icon: "fa-clock-rotate-left", 
@@ -116,35 +150,33 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }));
 
-        // Filter
         const allItems = [...actions, ...history].filter(item => 
             item.title.toLowerCase().includes(q)
         );
 
         if(allItems.length === 0) {
-            cmdResults.innerHTML = '<div style="padding:15px; color:#64748b; text-align:center;">No results found</div>';
+            cmdResults.innerHTML = '<div style="padding:15px; color:#64748b; text-align:center;">No God Mode actions found</div>';
             return;
         }
 
-        // Render Items
         allItems.forEach((item, index) => {
             const el = document.createElement('div');
             el.className = `cmd-item ${index === 0 ? 'selected' : ''}`;
             el.innerHTML = `
-                <div class="cmd-icon"><i class="fa-solid ${item.icon}"></i></div>
+                <div class="cmd-icon"><i class="fa-solid ${item.icon}" style="color: ${item.tag === 'Theme' ? 'var(--primary)' : ''}"></i></div>
                 <div class="cmd-text">${item.title}</div>
                 <div class="cmd-tag">${item.tag}</div>
             `;
             el.onclick = () => {
                 item.action();
-                togglePalette();
+                toggleGodMode();
             };
             cmdResults.appendChild(el);
         });
     }
 
     // ==========================================
-    // 2. MIC / VOICE DICTATION (Preserved)
+    // 2. MIC / VOICE DICTATION
     // ==========================================
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
@@ -227,8 +259,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Live Code Runner ---
     function enableLiveCode() {
-        const codes = aiOutput.querySelectorAll('pre code.language-javascript');
+        const codes = aiOutput.querySelectorAll('pre code');
         codes.forEach(block => {
+            if(!block.className.includes('language-javascript')) return;
             const pre = block.parentElement;
             if(pre.querySelector('.run-btn')) return; 
 
@@ -270,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         outputPanel.classList.add('hidden');
         workspace.classList.add('zen');
         exitFocusBtn.classList.add('show');
-        showToast("Focus Mode");
+        showToast("Focus Mode Active");
     });
     
     exitFocusBtn.addEventListener('click', () => {
@@ -307,6 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadList(k, c) {
+        if(!c) return;
         let l = JSON.parse(localStorage.getItem(k)) || []; c.innerHTML = '';
         l.forEach(i => {
             let el = document.createElement('div'); el.className='list-item'; el.innerText=i.title;
