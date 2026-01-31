@@ -191,6 +191,13 @@ body {
     background: rgba(0,0,0,0.2); 
 }
 
+/* NEW: This aligns the Input Title and Mic Button */
+.head-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .panel-title { font-weight: 600; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; }
 
 .template-bar { display: flex; gap: 8px; }
