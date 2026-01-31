@@ -1,6 +1,6 @@
-# 📘 EduSummariser — Building a Mini LLM from Scratch
+# 📘 NeuroNotes — Building a Mini LLM from Scratch
 
-EduSummariser is a **custom-built Language Model developed entirely from scratch using PyTorch**, trained on educational text and deployed as a **full-stack LLM-style web application**.
+NeuroNotes is a **custom-built Language Model developed entirely from scratch using PyTorch**, trained on educational text and deployed as a **full-stack LLM-style web application**.
 
 Unlike API-based projects, this system focuses on understanding the **core internals of Large Language Models**—from tokenization and self-attention to training, inference, and deployment—while operating under **limited computational resources**.
 
@@ -233,8 +233,8 @@ These limitations are acceptable for an **academic and learning-focused project*
 Clone the repository and create a virtual environment:
 
 ```
-git clone "https://github.com/AbhinavvNair/EduSummarizer.git"
-cd EduSummarizer
+git clone "https://github.com/AbhinavvNair/NeuroNotes.git"
+cd NeuroNotes
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
