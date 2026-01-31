@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const exitFocusBtn = document.getElementById('exitFocusBtn'); 
     const toast = document.getElementById('toast');
     
+    // PDF BUTTON (The Fix)
+    const pdfBtn = document.getElementById('pdfBtn');
+
     // Audio Elements
     const playAudioBtn = document.getElementById('playAudioBtn');
     const stopAudioBtn = document.getElementById('stopAudioBtn');
@@ -45,7 +48,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 1. GOD MODE (CTRL + K)
+    // 1. PDF EXPORT (FOOLPROOF VERSION)
+    // ==========================================
+    if (pdfBtn) {
+        console.log("✅ PDF Button Found"); // Debug Log
+
+        pdfBtn.addEventListener('click', () => {
+            console.log("🖱️ PDF Button Clicked"); // Debug Log
+
+            // 1. Check Library
+            if (typeof html2pdf === 'undefined') {
+                console.error("❌ html2pdf library is missing!");
+                alert("Error: PDF library did not load. Please check your internet connection.");
+                return;
+            }
+
+            // 2. Check Content
+            if (aiOutput.classList.contains('empty-state') || !aiOutput.innerText.trim()) {
+                showToast("Nothing to export");
+                return;
+            }
+
+            // 3. UI Feedback
+            showToast("Generating PDF...");
+            const originalIcon = pdfBtn.innerHTML;
+            pdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; 
+
+            // 4. Settings
+            const opt = {
+                margin:       0.5,
+                filename:     'NeuroNotes_Export.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true }, 
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            // 5. Generate
+            html2pdf().set(opt).from(aiOutput).save()
+                .then(() => {
+                    console.log("✅ PDF Download Started");
+                    showToast("PDF Downloaded");
+                })
+                .catch(err => {
+                    console.error("❌ PDF Error:", err);
+                    alert("PDF Failed: " + err.message);
+                })
+                .finally(() => {
+                    pdfBtn.innerHTML = originalIcon;
+                });
+        });
+    } else {
+        console.error("❌ PDF Button NOT found. Did you add id='pdfBtn' to HTML?");
+    }
+
+    // Keep global for God Mode
+    window.triggerPDF = () => { if(pdfBtn) pdfBtn.click(); };
+
+    // ==========================================
+    // 2. GOD MODE (CTRL + K)
     // ==========================================
     function toggleGodMode() {
         if(!cmdPalette) return;
@@ -90,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const actions = [
         { title: "New Note", icon: "fa-plus", tag: "Action", action: () => newNoteBtn.click() },
         { title: "Refine Text (AI)", icon: "fa-wand-magic-sparkles", tag: "AI", action: () => processBtn.click() },
+        { title: "Export PDF", icon: "fa-file-pdf", tag: "File", action: () => window.triggerPDF() }, 
         { title: "Podcast Play", icon: "fa-play", tag: "Audio", action: () => playAudioBtn.click() },
         { title: "Focus Mode", icon: "fa-expand", tag: "View", action: () => focusBtn.click() },
         { title: "Visualize Diagram", icon: "fa-diagram-project", tag: "Tool", action: () => visualizeBtn.click() },
@@ -158,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 2. MIC / PODCAST / AI
+    // 3. MIC / PODCAST / AI
     // ==========================================
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
@@ -236,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     speech.onend = () => { isSpeaking = false; playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; };
 
-    // AI Logic (Connects to main.py)
+    // AI Logic
     processBtn.addEventListener('click', async () => {
         const text = userInput.value.trim();
         if(!text) { showToast("Enter notes first"); return; }
