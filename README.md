@@ -1,6 +1,6 @@
-# 📘 EduSummariser — Building a Mini LLM from Scratch
+# 📘 EduSummarizer — Building a Mini LLM from Scratch
 
-EduSummariser is a **custom-built Language Model developed entirely from scratch using PyTorch**, trained on educational text and deployed as a **full-stack LLM-style web application**.
+EduSummarizer is a **custom-built Language Model developed entirely from scratch using PyTorch**, trained on educational text and deployed as a **full-stack LLM-style web application**.
 
 Unlike API-based projects, this system focuses on understanding the **core internals of Large Language Models**—from tokenization and self-attention to training, inference, and deployment—while operating under **limited computational resources**.
 
@@ -28,7 +28,7 @@ Most existing summarization tools either:
 - Use **rule-based heuristics** (low quality), or  
 - Depend on **closed-source pretrained APIs** (low learning value)
 
-EduSummariser was built to:
+EduSummarizer was built to:
 - Understand LLMs **from first principles**
 - Avoid black-box dependencies
 - Explore how far a **small custom model** can go
@@ -227,7 +227,7 @@ These limitations are acceptable for an **academic and learning-focused project*
 
 ---
 
-## 🚀 How to Run EduSummariser
+## 🚀 How to Run EduSummarizer
 
 ### 1. Environment Setup
 Clone the repository and create a virtual environment:
