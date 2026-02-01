@@ -47,15 +47,26 @@ body {
 }
 .sidebar.hidden { margin-left: -260px; } 
 
+/* FIXED LOGO SECTION FOR LONG TITLES */
 .logo-section { 
     display: flex; 
     align-items: center; 
-    gap: 12px; 
+    gap: 8px; /* Reduced gap */
     margin-bottom: 30px; 
     color: var(--primary); 
-    font-size: 1.2rem; 
-    font-weight: 700; 
 }
+
+.logo-section h2 {
+    font-size: 1.15rem; /* Slightly smaller to fit EduSummarizer */
+    font-weight: 700;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.logo-icon {
+    font-size: 1.3rem; 
+}
+/* END FIX */
 
 .nav-menu { flex: 1; display: flex; flex-direction: column; gap: 8px; }
 
