@@ -10,13 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const newNoteBtn = document.getElementById('newNoteBtn');
     const processBtn = document.getElementById('processBtn');
     
-    // VISUALIZE BUTTON (The Star of the Show)
+    // VISUALIZE BUTTON
     const visualizeBtn = document.getElementById('visualizeBtn');
     
     const focusBtn = document.getElementById('focusBtn'); 
     const exitFocusBtn = document.getElementById('exitFocusBtn'); 
     const toast = document.getElementById('toast');
-    const pdfBtn = document.getElementById('pdfBtn'); // PDF Fixed
+    const pdfBtn = document.getElementById('pdfBtn'); 
     
     // Audio Elements
     const playAudioBtn = document.getElementById('playAudioBtn');
@@ -29,8 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const cmdResults = document.getElementById('cmdResults');
     const micBtn = document.getElementById('micBtn');
     
-    // Lists & Layout
+    // SIDEBAR ELEMENTS (The Fix)
+    const historyToggle = document.getElementById('historyToggle');
     const historyList = document.getElementById('historyList');
+    const savedToggle = document.getElementById('savedToggle');
     const savedList = document.getElementById('savedList');
     const sidebar = document.getElementById('sidebar');
     const topHeader = document.getElementById('topHeader');
@@ -49,45 +51,72 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 1. VISUALIZATION ENGINE (NEW)
+    // 1. SIDEBAR TOGGLE LOGIC (NEW)
+    // ==========================================
+    
+    if(historyToggle && historyList) {
+        historyToggle.addEventListener('click', () => {
+            const isHidden = historyList.style.display === 'none';
+            // Toggle Display
+            historyList.style.display = isHidden ? 'flex' : 'none';
+            // Toggle Active Class (for styling)
+            historyToggle.classList.toggle('active', isHidden);
+            
+            // Close 'Saved' if open to keep sidebar clean
+            if(isHidden && savedList) {
+                savedList.style.display = 'none';
+                savedToggle.classList.remove('active');
+            }
+        });
+    }
+
+    if(savedToggle && savedList) {
+        savedToggle.addEventListener('click', () => {
+            const isHidden = savedList.style.display === 'none';
+            savedList.style.display = isHidden ? 'flex' : 'none';
+            savedToggle.classList.toggle('active', isHidden);
+
+            if(isHidden && historyList) {
+                historyList.style.display = 'none';
+                historyToggle.classList.remove('active');
+            }
+        });
+    }
+
+    // ==========================================
+    // 2. VISUALIZATION ENGINE
     // ==========================================
     if(visualizeBtn) {
         visualizeBtn.addEventListener('click', async () => {
             const text = userInput.value.trim() || aiOutput.innerText;
             if(!text || text.length < 5) { showToast("Enter more text to visualize"); return; }
 
-            // UI Feedback
             visualizeBtn.disabled = true;
             const originalIcon = visualizeBtn.innerHTML;
             visualizeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             showToast("Designing Diagram...");
 
-            // Special Prompt for Diagrams
             const prompt = `Based on the following text, generate a MERMAID.JS graph code (graph TD or mindmap). 
             STRICT RULE: Output ONLY the code block inside \`\`\`mermaid ... \`\`\`. Do not say "Here is the code".
             Text to visualize:
-            ${text.substring(0, 1500)}`; // Limit char count to avoid lag
+            ${text.substring(0, 1500)}`; 
 
             try {
-                // Use existing backend
                 const response = await fetch("http://127.0.0.1:8000/generate", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ prompt: prompt, temperature: 0.2 }), // Low temp for precise code
+                    body: JSON.stringify({ prompt: prompt, temperature: 0.2 }), 
                 });
 
                 if (!response.ok) throw new Error("Backend Error");
                 const data = await response.json();
                 
-                // Extract Code Block using Regex
                 const match = data.response.match(/```mermaid([\s\S]*?)```/);
                 const mermaidCode = match ? match[1].trim() : data.response;
 
-                // Render
                 aiOutput.innerHTML = `<div class="mermaid">${mermaidCode}</div>`;
                 aiOutput.classList.remove('empty-state');
                 
-                // Trigger Mermaid Render
                 await mermaid.run({ nodes: [aiOutput.querySelector('.mermaid')] });
                 showToast("Diagram Created");
 
@@ -103,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 2. PDF EXPORT (FOOLPROOF)
+    // 3. PDF EXPORT
     // ==========================================
     if (pdfBtn) {
         pdfBtn.addEventListener('click', () => {
@@ -133,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 3. GOD MODE (CTRL + K)
+    // 4. GOD MODE (CTRL + K)
     // ==========================================
     function toggleGodMode() {
         if(!cmdPalette) return;
@@ -244,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 4. MIC / PODCAST / AI
+    // 5. MIC / PODCAST / AI
     // ==========================================
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
