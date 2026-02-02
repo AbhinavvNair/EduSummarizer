@@ -51,11 +51,36 @@ document.addEventListener('DOMContentLoaded', () => {
     loadList('savedNotes', savedList);
     
     // Load Theme
-    const savedTheme = localStorage.getItem('userTheme');
-    if(savedTheme) {
-        const theme = JSON.parse(savedTheme);
-        setTheme(theme.primary, theme.hover, false);
-    }
+    // Setup theme checkbox reference
+// --- THEME SWITCH LOGIC ---
+const themeCheckbox = document.getElementById("themeCheckbox");
+
+if (themeCheckbox) {
+    // Load saved theme
+    let savedMode = localStorage.getItem("themeMode") || "dark";
+
+    // Apply theme
+    document.documentElement.classList.add(savedMode);
+
+    // Sync toggle UI
+    themeCheckbox.checked = savedMode === "light";
+
+    // Toggle theme on switch
+    themeCheckbox.addEventListener("change", () => {
+        if (themeCheckbox.checked) {
+            document.documentElement.classList.remove("dark");
+            document.documentElement.classList.add("light");
+            localStorage.setItem("themeMode", "light");
+            showToast("Light Mode Enabled");
+        } else {
+            document.documentElement.classList.remove("light");
+            document.documentElement.classList.add("dark");
+            localStorage.setItem("themeMode", "dark");
+            showToast("Dark Mode Enabled");
+        }
+    });
+}
+
 
     // ==========================================
     // 4. SIDEBAR LOGIC (THE FIX)
@@ -296,6 +321,9 @@ document.addEventListener('DOMContentLoaded', () => {
         { title: "Focus Mode", icon: "fa-expand", tag: "View", action: () => focusBtn.click() },
         { title: "Theme: Hacker Green", icon: "fa-terminal", tag: "Theme", action: () => setTheme('#34d399', '#10b981') },
         { title: "Theme: Default Blue", icon: "fa-droplet", tag: "Theme", action: () => setTheme('#818CF8', '#6366F1') },
+        { title: "Theme: Crimson Red", icon: "fa-palette", tag: "Theme", action: () => setTheme('#ef4444', '#dc2626') },
+        { title: "Theme: Royal Gold", icon: "fa-star", tag: "Theme", action: () => setTheme('#eab308', '#ca8a04') },
+        { title: "Theme: Sunset Orange", icon: "fa-sun", tag: "Theme", action: () => setTheme('#fb923c', '#f97316') },
         { title: "Clear Data", icon: "fa-trash", tag: "Data", action: () => { if(confirm("Clear All?")) { localStorage.clear(); location.reload(); } } }
     ];
 
