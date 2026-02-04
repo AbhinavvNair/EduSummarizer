@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cmdResults = document.getElementById('cmdResults');
     const toast = document.getElementById('toast');
 
-    // Theme Switch (Sun/Moon)
+    // Theme Switch
     const themeCheckbox = document.getElementById("themeCheckbox");
 
     // State
@@ -117,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
             saveToList('savedNotes', title, content);
             loadList('savedNotes', savedList);
             
-            // Auto-open Saved Sidebar
             if(savedList.style.display === 'none') {
                 savedList.style.display = 'flex';
                 savedToggle.classList.add('active');
@@ -237,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 10. GOD MODE & ACTIONS
+    // 10. GOD MODE (GROUPED SECTIONS)
     // ==========================================
     function toggleGodMode() {
         if(!cmdPalette) return;
@@ -266,13 +265,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if(notify) showToast("Theme Updated");
     }
 
-    // --- EXPANDED THEME LIST ---
     const actions = [
+        // GENERAL COMMANDS
         { title: "New Note", icon: "fa-plus", tag: "Action", action: () => newNoteBtn.click() },
         { title: "Refine Text", icon: "fa-wand-magic-sparkles", tag: "AI", action: () => processBtn.click() },
         { title: "Save Note", icon: "fa-bookmark", tag: "Action", action: () => saveNoteBtn.click() },
-        
-        // Colors
+        { title: "Export PDF", icon: "fa-file-pdf", tag: "File", action: () => pdfBtn ? pdfBtn.click() : null }, 
+        { title: "Visualize", icon: "fa-diagram-project", tag: "Tool", action: () => visualizeBtn.click() },
+        { title: "Focus Mode", icon: "fa-expand", tag: "View", action: () => focusBtn.click() },
+        { title: "Podcast Play", icon: "fa-play", tag: "Audio", action: () => playAudioBtn.click() },
+        { title: "Clear Data", icon: "fa-trash", tag: "Data", action: () => { if(confirm("Clear All?")) { localStorage.clear(); location.reload(); } } },
+
+        // THEMES
         { title: "Theme: Default Blue", icon: "fa-droplet", tag: "Color", action: () => setTheme('#818CF8', '#6366F1') },
         { title: "Theme: Hacker Green", icon: "fa-terminal", tag: "Color", action: () => setTheme('#34d399', '#10b981') },
         { title: "Theme: Crimson Red", icon: "fa-fire", tag: "Color", action: () => setTheme('#ef4444', '#dc2626') },
@@ -282,9 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { title: "Theme: Hot Pink", icon: "fa-heart", tag: "Color", action: () => setTheme('#f472b6', '#db2777') },
         { title: "Theme: Cyberpunk Teal", icon: "fa-microchip", tag: "Color", action: () => setTheme('#2dd4bf', '#0d9488') },
         { title: "Theme: Slate Grey", icon: "fa-mountain", tag: "Color", action: () => setTheme('#94a3b8', '#475569') },
-        { title: "Theme: Mint Fresh", icon: "fa-leaf", tag: "Color", action: () => setTheme('#6ee7b7', '#059669') },
-
-        { title: "Clear Data", icon: "fa-trash", tag: "Data", action: () => { if(confirm("Clear All?")) { localStorage.clear(); location.reload(); } } }
+        { title: "Theme: Mint Fresh", icon: "fa-leaf", tag: "Color", action: () => setTheme('#6ee7b7', '#059669') }
     ];
 
     if(cmdInput) {
@@ -294,26 +296,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- NEW GROUPED RENDER FUNCTION ---
     function renderCommands(query) {
         if(!cmdResults) return; cmdResults.innerHTML = '';
         const q = query.toLowerCase();
         
+        // 1. Get History Items
         let history = (JSON.parse(localStorage.getItem('notesHistory')) || []).map(h => ({
             title: h.title, icon: "fa-clock-rotate-left", tag: "History",
             action: () => { userInput.value = h.o; aiOutput.innerHTML = marked.parse(h.r); aiOutput.classList.remove('empty-state'); currentRawResponse = h.r; enableLiveCode(); }
         }));
 
-        const allItems = [...actions, ...history].filter(item => item.title.toLowerCase().includes(q));
+        // 2. Filter All Items
+        const filteredActions = actions.filter(item => item.title.toLowerCase().includes(q) && item.tag !== 'Color');
+        const filteredThemes = actions.filter(item => item.title.toLowerCase().includes(q) && item.tag === 'Color');
+        const filteredHistory = history.filter(item => item.title.toLowerCase().includes(q));
 
-        if(allItems.length === 0) { cmdResults.innerHTML = '<div style="padding:15px; color:#64748b; text-align:center;">No actions found</div>'; return; }
+        // 3. Helper to render a section
+        const renderSection = (title, items) => {
+            if(items.length === 0) return;
+            
+            // Render Header
+            const header = document.createElement('div');
+            header.className = 'cmd-category-title';
+            header.innerText = title;
+            cmdResults.appendChild(header);
 
-        allItems.forEach((item, index) => {
-            const el = document.createElement('div');
-            el.className = `cmd-item ${index === 0 ? 'selected' : ''}`;
-            el.innerHTML = `<div class="cmd-icon"><i class="fa-solid ${item.icon}"></i></div><div class="cmd-text">${item.title}</div><div class="cmd-tag">${item.tag}</div>`;
-            el.onclick = () => { item.action(); toggleGodMode(); };
-            cmdResults.appendChild(el);
-        });
+            // Render Items
+            items.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = `cmd-item`;
+                el.innerHTML = `<div class="cmd-icon"><i class="fa-solid ${item.icon}"></i></div><div class="cmd-text">${item.title}</div><div class="cmd-tag">${item.tag}</div>`;
+                el.onclick = () => { item.action(); toggleGodMode(); };
+                cmdResults.appendChild(el);
+            });
+        };
+
+        // 4. Render Groups
+        if (filteredActions.length + filteredThemes.length + filteredHistory.length === 0) {
+            cmdResults.innerHTML = '<div style="padding:15px; color:#64748b; text-align:center;">No actions found</div>';
+            return;
+        }
+
+        renderSection("Commands", filteredActions);
+        renderSection("Themes", filteredThemes);
+        renderSection("History", filteredHistory);
+
+        // Auto-select first item
+        const first = cmdResults.querySelector('.cmd-item');
+        if(first) first.classList.add('selected');
     }
 
     // ==========================================

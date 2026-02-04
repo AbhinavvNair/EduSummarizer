@@ -625,3 +625,21 @@ html.light {
   80% { transform: scale(0.8); }
   100% { transform: scale(1); }
 }
+
+/* --- COMMAND PALETTE SECTIONS --- */
+.cmd-category-title {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 5px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Remove border for the very first category */
+.cmd-category-title:first-child {
+    margin-top: 0;
+}
