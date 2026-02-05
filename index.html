@@ -67,10 +67,30 @@
                     <h1>Workspace</h1>
                 </div>
                 <div class="header-actions">
-                    <button id="themeBtn" class="theme-orb" title="Cycle Theme">
-                        <i class="fa-solid fa-moon"></i>
-                    </button>
-
+                    
+                    <div class="theme-wrapper">
+                        <button id="themeBtn" class="theme-orb" title="Select Theme">
+                            <i class="fa-solid fa-palette"></i>
+                        </button>
+                        
+                        <div class="theme-menu">
+                            <button class="theme-option" data-idx="0">
+                                <i class="fa-solid fa-moon"></i> Nebula
+                            </button>
+                            <button class="theme-option" data-idx="1">
+                                <i class="fa-solid fa-sun"></i> Daylight
+                            </button>
+                            <button class="theme-option" data-idx="2">
+                                <i class="fa-solid fa-battery-quarter"></i> Midnight
+                            </button>
+                            <button class="theme-option" data-idx="3">
+                                <i class="fa-solid fa-terminal"></i> Hacker
+                            </button>
+                            <button class="theme-option" data-idx="4">
+                                <i class="fa-solid fa-fire"></i> Sunset
+                            </button>
+                        </div>
+                    </div>
                     <button class="action-btn secondary" id="focusBtn" title="Focus Mode">
                         <i class="fa-solid fa-expand"></i>
                     </button>
@@ -150,7 +170,7 @@
         <div class="palette-modal">
             <div class="palette-search">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="cmdInput" placeholder="Type a command (e.g. 'Theme')..." autocomplete="off">
+                <input type="text" id="cmdInput" placeholder="Type a command (e.g. 'Midnight')..." autocomplete="off">
                 <span class="palette-shortcut">Esc</span>
             </div>
             <div class="palette-results" id="cmdResults"></div>
@@ -161,6 +181,7 @@
         </div>
     </div>
     <div id="toast" class="toast">Action Complete</div>
+    
     <script src="script.js"></script>
 </body>
 </html>

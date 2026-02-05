@@ -44,9 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const cmdResults = document.getElementById('cmdResults');
     const toast = document.getElementById('toast');
 
-    // NEW THEME BUTTON
-    const themeBtn = document.getElementById("themeBtn");
-
     // State
     let currentRawResponse = ""; 
 
@@ -54,8 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadList('notesHistory', historyList);
     loadList('savedNotes', savedList);
     
-    // --- THEME CYCLING LOGIC ---
-    // Themes: [Name, Icon Class, Display Name]
+    // --- THEME PICKER LOGIC ---
     const themes = [
         { id: 'nebula', icon: 'fa-moon', name: 'Nebula' },
         { id: 'light', icon: 'fa-sun', name: 'Daylight' },
@@ -64,40 +60,34 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'sunset', icon: 'fa-fire', name: 'Sunset' }
     ];
 
-    // Load saved theme or default to 0 (Nebula)
     let currentThemeIndex = parseInt(localStorage.getItem('themeIndex')) || 0;
     
     function applyTheme(index) {
         const theme = themes[index];
-        // Remove all previous theme attributes
         document.documentElement.removeAttribute('data-theme');
         
-        // Apply new theme (if not default)
         if(theme.id !== 'nebula') {
             document.documentElement.setAttribute('data-theme', theme.id);
         }
 
-        // Update Button Icon
-        if(themeBtn) {
-            themeBtn.innerHTML = `<i class="fa-solid ${theme.icon}"></i>`;
-            themeBtn.title = `Current Theme: ${theme.name}`;
-        }
+        // Update Tooltip for reference
+        const btn = document.getElementById("themeBtn");
+        if(btn) btn.title = `Current Theme: ${theme.name}`;
         
-        // Save
         localStorage.setItem('themeIndex', index);
-        // showToast(`Theme: ${theme.name}`);
     }
 
     // Initialize Theme
     applyTheme(currentThemeIndex);
 
-    // Event Listener for Button
-    if(themeBtn) {
-        themeBtn.addEventListener('click', () => {
-            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
-            applyTheme(currentThemeIndex);
+    // Attach Listeners to Dropdown Items
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const idx = parseInt(option.getAttribute('data-idx'));
+            applyTheme(idx);
+            showToast(`Theme: ${themes[idx].name}`);
         });
-    }
+    });
 
     // ==========================================
     // 4. SIDEBAR LOGIC
@@ -123,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // CLEAR HISTORY
     if (clearHistoryBtn) {
         clearHistoryBtn.addEventListener('click', () => {
-            if (confirm('Clear all history?')) {
+            if (confirm('Are you sure you want to clear all history?')) {
                 localStorage.removeItem('notesHistory');
                 loadList('notesHistory', historyList);
                 if (historyList) { historyList.style.display = 'none'; historyToggle.classList.remove('active'); }
@@ -292,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { title: "Focus Mode", icon: "fa-expand", tag: "View", action: () => focusBtn.click() },
         { title: "Podcast Play", icon: "fa-play", tag: "Audio", action: () => playAudioBtn.click() },
         { title: "Clear Data", icon: "fa-trash", tag: "Data", action: () => { if (confirm("Clear All?")) { localStorage.clear(); location.reload(); } } },
-        { title: "Theme: Nebula (Reset)", icon: "fa-moon", tag: "Theme", action: () => applyTheme(0) },
+        { title: "Theme: Nebula", icon: "fa-moon", tag: "Theme", action: () => applyTheme(0) },
         { title: "Theme: Daylight", icon: "fa-sun", tag: "Theme", action: () => applyTheme(1) },
         { title: "Theme: Midnight", icon: "fa-battery-quarter", tag: "Theme", action: () => applyTheme(2) },
         { title: "Theme: Hacker", icon: "fa-terminal", tag: "Theme", action: () => applyTheme(3) },
