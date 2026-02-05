@@ -44,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cmdResults = document.getElementById('cmdResults');
     const toast = document.getElementById('toast');
 
-    // Theme Switch
-    const themeCheckbox = document.getElementById("themeCheckbox");
+    // NEW THEME BUTTON
+    const themeBtn = document.getElementById("themeBtn");
 
     // State
     let currentRawResponse = ""; 
@@ -54,31 +54,48 @@ document.addEventListener('DOMContentLoaded', () => {
     loadList('notesHistory', historyList);
     loadList('savedNotes', savedList);
     
-    // Load Accent Color
-    const savedTheme = localStorage.getItem('userTheme');
-    if (savedTheme) {
-        const theme = JSON.parse(savedTheme);
-        setTheme(theme.primary, theme.hover, false);
+    // --- THEME CYCLING LOGIC ---
+    // Themes: [Name, Icon Class, Display Name]
+    const themes = [
+        { id: 'nebula', icon: 'fa-moon', name: 'Nebula' },
+        { id: 'light', icon: 'fa-sun', name: 'Daylight' },
+        { id: 'midnight', icon: 'fa-battery-quarter', name: 'Midnight' },
+        { id: 'terminal', icon: 'fa-terminal', name: 'Hacker' },
+        { id: 'sunset', icon: 'fa-fire', name: 'Sunset' }
+    ];
+
+    // Load saved theme or default to 0 (Nebula)
+    let currentThemeIndex = parseInt(localStorage.getItem('themeIndex')) || 0;
+    
+    function applyTheme(index) {
+        const theme = themes[index];
+        // Remove all previous theme attributes
+        document.documentElement.removeAttribute('data-theme');
+        
+        // Apply new theme (if not default)
+        if(theme.id !== 'nebula') {
+            document.documentElement.setAttribute('data-theme', theme.id);
+        }
+
+        // Update Button Icon
+        if(themeBtn) {
+            themeBtn.innerHTML = `<i class="fa-solid ${theme.icon}"></i>`;
+            themeBtn.title = `Current Theme: ${theme.name}`;
+        }
+        
+        // Save
+        localStorage.setItem('themeIndex', index);
+        // showToast(`Theme: ${theme.name}`);
     }
 
-    // Load Light/Dark Mode
-    if (themeCheckbox) {
-        let savedMode = localStorage.getItem("themeMode") || "dark";
-        document.documentElement.classList.add(savedMode);
-        themeCheckbox.checked = savedMode === "light";
+    // Initialize Theme
+    applyTheme(currentThemeIndex);
 
-        themeCheckbox.addEventListener("change", () => {
-            if (themeCheckbox.checked) {
-                document.documentElement.classList.remove("dark");
-                document.documentElement.classList.add("light");
-                localStorage.setItem("themeMode", "light");
-                showToast("Light Mode Enabled");
-            } else {
-                document.documentElement.classList.remove("light");
-                document.documentElement.classList.add("dark");
-                localStorage.setItem("themeMode", "dark");
-                showToast("Dark Mode Enabled");
-            }
+    // Event Listener for Button
+    if(themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            applyTheme(currentThemeIndex);
         });
     }
 
@@ -90,10 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isHidden = historyList.style.display === 'none';
             historyList.style.display = isHidden ? 'flex' : 'none';
             historyToggle.classList.toggle('active', isHidden);
-            if (isHidden && savedList) { 
-                savedList.style.display = 'none'; 
-                savedToggle.classList.remove('active'); 
-            }
+            if (isHidden && savedList) { savedList.style.display = 'none'; savedToggle.classList.remove('active'); }
         });
     }
 
@@ -102,34 +116,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const isHidden = savedList.style.display === 'none';
             savedList.style.display = isHidden ? 'flex' : 'none';
             savedToggle.classList.toggle('active', isHidden);
-            if (isHidden && historyList) { 
-                historyList.style.display = 'none'; 
-                historyToggle.classList.remove('active'); 
-            }
+            if (isHidden && historyList) { historyList.style.display = 'none'; historyToggle.classList.remove('active'); }
         });
     }
 
-    // ==========================================
-    // CLEAR HISTORY FUNCTIONALITY
-    // ==========================================
+    // CLEAR HISTORY
     if (clearHistoryBtn) {
         clearHistoryBtn.addEventListener('click', () => {
-            if (confirm('Are you sure you want to clear all history? This action cannot be undone.')) {
+            if (confirm('Clear all history?')) {
                 localStorage.removeItem('notesHistory');
                 loadList('notesHistory', historyList);
-                
-                if (historyList) {
-                    historyList.style.display = 'none';
-                    historyToggle.classList.remove('active');
-                }
-                
-                showToast('History Cleared Successfully');
+                if (historyList) { historyList.style.display = 'none'; historyToggle.classList.remove('active'); }
+                showToast('History Cleared');
             }
         });
     }
 
     // ==========================================
-    // 5. SAVE NOTE LOGIC
+    // 5. SAVE NOTE
     // ==========================================
     if (saveNoteBtn) {
         saveNoteBtn.addEventListener('click', () => {
@@ -137,8 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let title = userInput.value.trim().substring(0, 25) || "Untitled Note";
 
             if (!content || content.includes("Ready for refinement") || content.trim().length === 0) {
-                showToast("Generate a note first!"); 
-                return;
+                showToast("Generate a note first!"); return;
             }
 
             saveToList('savedNotes', title, content);
@@ -147,12 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (savedList.style.display === 'none') {
                 savedList.style.display = 'flex';
                 savedToggle.classList.add('active');
-                if (historyList) { 
-                    historyList.style.display = 'none'; 
-                    historyToggle.classList.remove('active'); 
-                }
+                if (historyList) { historyList.style.display = 'none'; historyToggle.classList.remove('active'); }
             }
-            showToast("Note Saved to Notebook");
+            showToast("Note Saved");
         });
     }
 
@@ -162,13 +162,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (copyBtn) {
         copyBtn.addEventListener('click', () => {
             const textToCopy = aiOutput.innerText;
-            if (!textToCopy || textToCopy.includes("Ready for refinement")) { 
-                showToast("Nothing to copy"); 
-                return; 
-            }
-            navigator.clipboard.writeText(textToCopy)
-                .then(() => showToast("Copied to Clipboard"))
-                .catch(() => showToast("Copy Failed"));
+            if (!textToCopy || textToCopy.includes("Ready for refinement")) { showToast("Nothing to copy"); return; }
+            navigator.clipboard.writeText(textToCopy).then(() => showToast("Copied")).catch(() => showToast("Copy Failed"));
         });
     }
 
@@ -177,18 +172,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     processBtn.addEventListener('click', async () => {
         const text = userInput.value.trim();
-        if (!text) { 
-            showToast("Enter notes first"); 
-            return; 
-        }
+        if (!text) { showToast("Enter notes first"); return; }
         
         processBtn.disabled = true; 
         processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Thinking...';
         
         try {
             const response = await fetch("http://127.0.0.1:8000/generate", {
-                method: "POST", 
-                headers: { "Content-Type": "application/json" },
+                method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ prompt: text }),
             });
 
@@ -199,12 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
             aiOutput.innerHTML = marked.parse(data.response);
             
             if (window.renderMathInElement) {
-                renderMathInElement(aiOutput, { 
-                    delimiters: [
-                        {left: "$$", right: "$$", display: true}, 
-                        {left: "$", right: "$", display: false}
-                    ] 
-                });
+                renderMathInElement(aiOutput, { delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}] });
             }
             
             aiOutput.classList.remove('empty-state');
@@ -213,36 +199,28 @@ document.addEventListener('DOMContentLoaded', () => {
             loadList('notesHistory', historyList);
             showToast("Refinement Complete");
 
-        } catch (error) { 
-            showToast("Error: " + error.message); 
-        } finally { 
-            processBtn.disabled = false; 
-            processBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Refine'; 
-        }
+        } catch (error) { showToast("Error: " + error.message); } 
+        finally { processBtn.disabled = false; processBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Refine'; }
     });
 
     // ==========================================
-    // 8. VISUALIZATION ENGINE
+    // 8. VISUALIZATION
     // ==========================================
     if (visualizeBtn) {
         visualizeBtn.addEventListener('click', async () => {
             const text = userInput.value.trim() || aiOutput.innerText;
-            if (!text || text.length < 5) { 
-                showToast("Enter more text"); 
-                return; 
-            }
+            if (!text || text.length < 5) { showToast("Enter more text"); return; }
 
             visualizeBtn.disabled = true;
             const originalIcon = visualizeBtn.innerHTML;
             visualizeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            showToast("Designing Diagram...");
+            showToast("Designing...");
 
-            const prompt = "Based on the following text, generate a MERMAID.JS graph code (graph TD or mindmap). STRICT RULE: Output ONLY the code block inside ```mermaid ... ```. Text: " + text.substring(0, 1500); 
+            const prompt = "Based on text, generate MERMAID.JS graph code. STRICT: Output ONLY code inside ```mermaid ... ```. Text: " + text.substring(0, 1500); 
 
             try {
                 const response = await fetch("http://127.0.0.1:8000/generate", {
-                    method: "POST", 
-                    headers: { "Content-Type": "application/json" },
+                    method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ prompt: prompt, temperature: 0.2 }), 
                 });
 
@@ -256,13 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 await mermaid.run({ nodes: [aiOutput.querySelector('.mermaid')] });
                 showToast("Diagram Created");
 
-            } catch (error) { 
-                console.error(error); 
-                showToast("Visualization Failed"); 
-            } finally { 
-                visualizeBtn.disabled = false; 
-                visualizeBtn.innerHTML = originalIcon; 
-            }
+            } catch (error) { console.error(error); showToast("Visualization Failed"); } 
+            finally { visualizeBtn.disabled = false; visualizeBtn.innerHTML = originalIcon; }
         });
     }
 
@@ -271,25 +244,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     if (pdfBtn) {
         pdfBtn.addEventListener('click', () => {
-            if (typeof html2pdf === 'undefined') { 
-                alert("PDF Library Missing"); 
-                return; 
-            }
-            if (aiOutput.classList.contains('empty-state')) { 
-                showToast("Nothing to export"); 
-                return; 
-            }
+            if (typeof html2pdf === 'undefined') { alert("PDF Library Missing"); return; }
+            if (aiOutput.classList.contains('empty-state')) { showToast("Nothing to export"); return; }
             
             showToast("Generating PDF...");
             const originalIcon = pdfBtn.innerHTML;
             pdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; 
             
             html2pdf().set({ 
-                margin: 0.5, 
-                filename: 'EduSummarizer_Export.pdf', 
-                image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true }, 
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
+                margin: 0.5, filename: 'EduSummarizer.pdf', image: { type: 'jpeg', quality: 0.98 }, 
+                html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
             }).from(aiOutput).save()
               .then(() => showToast("PDF Downloaded"))
               .finally(() => pdfBtn.innerHTML = originalIcon);
@@ -297,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 10. GOD MODE (GROUPED SECTIONS)
+    // 10. GOD MODE
     // ==========================================
     function toggleGodMode() {
         if (!cmdPalette) return;
@@ -305,9 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isHidden) {
             cmdPalette.classList.remove('hidden');
             setTimeout(() => cmdPalette.classList.add('show'), 10);
-            cmdInput.value = ''; 
-            cmdInput.focus(); 
-            renderCommands(''); 
+            cmdInput.value = ''; cmdInput.focus(); renderCommands(''); 
         } else {
             cmdPalette.classList.remove('show');
             setTimeout(() => cmdPalette.classList.add('hidden'), 200);
@@ -315,25 +277,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { 
-            e.preventDefault(); 
-            toggleGodMode(); 
-        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); toggleGodMode(); }
         if (e.key === 'Escape' && cmdPalette) toggleGodMode();
     });
 
-    if (cmdPalette) {
-        cmdPalette.addEventListener('click', (e) => { 
-            if (e.target === cmdPalette) toggleGodMode(); 
-        });
-    }
-
-    function setTheme(primary, hover, notify = true) {
-        document.documentElement.style.setProperty('--primary', primary);
-        document.documentElement.style.setProperty('--primary-hover', hover);
-        localStorage.setItem('userTheme', JSON.stringify({ primary, hover }));
-        if (notify) showToast("Theme Updated");
-    }
+    if (cmdPalette) { cmdPalette.addEventListener('click', (e) => { if (e.target === cmdPalette) toggleGodMode(); }); }
 
     const actions = [
         { title: "New Note", icon: "fa-plus", tag: "Action", action: () => newNoteBtn.click() },
@@ -344,81 +292,53 @@ document.addEventListener('DOMContentLoaded', () => {
         { title: "Focus Mode", icon: "fa-expand", tag: "View", action: () => focusBtn.click() },
         { title: "Podcast Play", icon: "fa-play", tag: "Audio", action: () => playAudioBtn.click() },
         { title: "Clear Data", icon: "fa-trash", tag: "Data", action: () => { if (confirm("Clear All?")) { localStorage.clear(); location.reload(); } } },
-        { title: "Theme: Default Blue", icon: "fa-droplet", tag: "Color", action: () => setTheme('#818CF8', '#6366F1') },
-        { title: "Theme: Hacker Green", icon: "fa-terminal", tag: "Color", action: () => setTheme('#34d399', '#10b981') },
-        { title: "Theme: Crimson Red", icon: "fa-fire", tag: "Color", action: () => setTheme('#ef4444', '#dc2626') },
-        { title: "Theme: Royal Gold", icon: "fa-crown", tag: "Color", action: () => setTheme('#fbbf24', '#d97706') },
-        { title: "Theme: Sunset Orange", icon: "fa-sun", tag: "Color", action: () => setTheme('#fb923c', '#ea580c') },
-        { title: "Theme: Electric Violet", icon: "fa-bolt", tag: "Color", action: () => setTheme('#a78bfa', '#7c3aed') },
-        { title: "Theme: Hot Pink", icon: "fa-heart", tag: "Color", action: () => setTheme('#f472b6', '#db2777') },
-        { title: "Theme: Cyberpunk Teal", icon: "fa-microchip", tag: "Color", action: () => setTheme('#2dd4bf', '#0d9488') },
-        { title: "Theme: Slate Grey", icon: "fa-mountain", tag: "Color", action: () => setTheme('#94a3b8', '#475569') },
-        { title: "Theme: Mint Fresh", icon: "fa-leaf", tag: "Color", action: () => setTheme('#6ee7b7', '#059669') }
+        { title: "Theme: Nebula (Reset)", icon: "fa-moon", tag: "Theme", action: () => applyTheme(0) },
+        { title: "Theme: Daylight", icon: "fa-sun", tag: "Theme", action: () => applyTheme(1) },
+        { title: "Theme: Midnight", icon: "fa-battery-quarter", tag: "Theme", action: () => applyTheme(2) },
+        { title: "Theme: Hacker", icon: "fa-terminal", tag: "Theme", action: () => applyTheme(3) },
+        { title: "Theme: Sunset", icon: "fa-fire", tag: "Theme", action: () => applyTheme(4) }
     ];
 
     if (cmdInput) {
         cmdInput.addEventListener('input', (e) => renderCommands(e.target.value));
         cmdInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { 
-                const selected = document.querySelector('.cmd-item'); 
-                if (selected) selected.click(); 
-            }
+            if (e.key === 'Enter') { const selected = document.querySelector('.cmd-item'); if (selected) selected.click(); }
         });
     }
 
     function renderCommands(query) {
-        if (!cmdResults) return; 
-        cmdResults.innerHTML = '';
+        if (!cmdResults) return; cmdResults.innerHTML = '';
         const q = query.toLowerCase();
         
         let history = (JSON.parse(localStorage.getItem('notesHistory')) || []).map(h => ({
-            title: h.title, 
-            icon: "fa-clock-rotate-left", 
-            tag: "History",
-            action: () => { 
-                userInput.value = h.o; 
-                aiOutput.innerHTML = marked.parse(h.r); 
-                aiOutput.classList.remove('empty-state'); 
-                currentRawResponse = h.r; 
-                enableLiveCode(); 
-            }
+            title: h.title, icon: "fa-clock-rotate-left", tag: "History",
+            action: () => { userInput.value = h.o; aiOutput.innerHTML = marked.parse(h.r); aiOutput.classList.remove('empty-state'); currentRawResponse = h.r; enableLiveCode(); }
         }));
 
-        const filteredActions = actions.filter(item => item.title.toLowerCase().includes(q) && item.tag !== 'Color');
-        const filteredThemes = actions.filter(item => item.title.toLowerCase().includes(q) && item.tag === 'Color');
+        const filteredActions = actions.filter(item => item.title.toLowerCase().includes(q) && item.tag !== 'Theme');
+        const filteredThemes = actions.filter(item => item.title.toLowerCase().includes(q) && item.tag === 'Theme');
         const filteredHistory = history.filter(item => item.title.toLowerCase().includes(q));
 
         const renderSection = (title, items) => {
             if (items.length === 0) return;
-            
-            const header = document.createElement('div');
-            header.className = 'cmd-category-title';
-            header.innerText = title;
-            cmdResults.appendChild(header);
-
+            const header = document.createElement('div'); header.className = 'cmd-category-title'; header.innerText = title; cmdResults.appendChild(header);
             items.forEach((item) => {
-                const el = document.createElement('div');
-                el.className = 'cmd-item';
-                el.innerHTML = "<div class='cmd-icon'><i class='fa-solid " + item.icon + "'></i></div><div class='cmd-text'>" + item.title + "</div><div class='cmd-tag'>" + item.tag + "</div>";
-                el.onclick = () => { 
-                    item.action(); 
-                    toggleGodMode(); 
-                };
+                const el = document.createElement('div'); el.className = 'cmd-item';
+                el.innerHTML = `<div class='cmd-icon'><i class='fa-solid ${item.icon}'></i></div><div class='cmd-text'>${item.title}</div><div class='cmd-tag'>${item.tag}</div>`;
+                el.onclick = () => { item.action(); toggleGodMode(); };
                 cmdResults.appendChild(el);
             });
         };
 
         if (filteredActions.length + filteredThemes.length + filteredHistory.length === 0) {
-            cmdResults.innerHTML = "<div style='padding:15px; color:#64748b; text-align:center;'>No actions found</div>";
-            return;
+            cmdResults.innerHTML = "<div style='padding:15px; color:#64748b; text-align:center;'>No actions found</div>"; return;
         }
 
         renderSection("Commands", filteredActions);
         renderSection("Themes", filteredThemes);
         renderSection("History", filteredHistory);
 
-        const first = cmdResults.querySelector('.cmd-item');
-        if (first) first.classList.add('selected');
+        const first = cmdResults.querySelector('.cmd-item'); if (first) first.classList.add('selected');
     }
 
     // ==========================================
@@ -427,176 +347,67 @@ document.addEventListener('DOMContentLoaded', () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition && micBtn) {
         let recognition = new SpeechRecognition();
-        recognition.continuous = false; 
-        recognition.lang = 'en-US';
-        
+        recognition.continuous = false; recognition.lang = 'en-US';
         micBtn.addEventListener('click', () => {
-            if (micBtn.classList.contains('recording')) { 
-                recognition.stop(); 
-            } else { 
-                try { 
-                    recognition.start(); 
-                    micBtn.classList.add('recording'); 
-                    showToast("Listening..."); 
-                } catch (e) { 
-                    showToast("Mic Error"); 
-                } 
-            }
+            if (micBtn.classList.contains('recording')) { recognition.stop(); } 
+            else { try { recognition.start(); micBtn.classList.add('recording'); showToast("Listening..."); } catch (e) { showToast("Mic Error"); } }
         });
-        
         recognition.onresult = (event) => {
             userInput.value += (userInput.value.length > 0 ? ' ' : '') + event.results[0][0].transcript;
             userInput.dispatchEvent(new Event('input'));
         };
-        
         recognition.onend = () => micBtn.classList.remove('recording');
     }
 
-    let speech = new SpeechSynthesisUtterance();
-    let speeds = [1, 1.5, 2]; 
-    let speedIndex = 0;
-    
+    let speech = new SpeechSynthesisUtterance(); let speeds = [1, 1.5, 2]; let speedIndex = 0;
     if (playAudioBtn) {
         playAudioBtn.addEventListener('click', () => {
-            if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) { 
-                window.speechSynthesis.pause(); 
-                playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; 
-            } else if (window.speechSynthesis.paused) { 
-                window.speechSynthesis.resume(); 
-                playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; 
-            } else {
+            if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) { window.speechSynthesis.pause(); playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; } 
+            else if (window.speechSynthesis.paused) { window.speechSynthesis.resume(); playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; } 
+            else {
                 let t = window.getSelection().toString() || aiOutput.innerText || userInput.value;
                 if (!t || t.includes("Ready")) return;
-                window.speechSynthesis.cancel(); 
-                speech.text = t; 
-                speech.rate = speeds[speedIndex];
-                window.speechSynthesis.speak(speech); 
-                playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                window.speechSynthesis.cancel(); speech.text = t; speech.rate = speeds[speedIndex];
+                window.speechSynthesis.speak(speech); playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
             }
         });
     }
-    
-    if (stopAudioBtn) {
-        stopAudioBtn.addEventListener('click', () => { 
-            window.speechSynthesis.cancel(); 
-            playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; 
-        });
-    }
-    
-    if (speedBtn) {
-        speedBtn.addEventListener('click', () => { 
-            speedIndex = (speedIndex + 1) % speeds.length; 
-            speedBtn.innerText = speeds[speedIndex] + 'x'; 
-        });
-    }
-    
+    if (stopAudioBtn) { stopAudioBtn.addEventListener('click', () => { window.speechSynthesis.cancel(); playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; }); }
+    if (speedBtn) { speedBtn.addEventListener('click', () => { speedIndex = (speedIndex + 1) % speeds.length; speedBtn.innerText = speeds[speedIndex] + 'x'; }); }
     speech.onend = () => playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
 
     // ==========================================
     // 12. HELPER FUNCTIONS
     // ==========================================
-    
     function enableLiveCode() {
         const codes = aiOutput.querySelectorAll('pre code');
         codes.forEach(block => {
             if (!block.className.includes('javascript')) return;
-            const pre = block.parentElement; 
-            if (pre.querySelector('.run-btn')) return;
-            
-            const btn = document.createElement('button'); 
-            btn.className = 'run-btn'; 
-            btn.innerHTML = '<i class="fa-solid fa-play"></i> Run';
+            const pre = block.parentElement; if (pre.querySelector('.run-btn')) return;
+            const btn = document.createElement('button'); btn.className = 'run-btn'; btn.innerHTML = '<i class="fa-solid fa-play"></i> Run';
             pre.appendChild(btn);
-            
-            const outputDiv = document.createElement('div'); 
-            outputDiv.className = 'code-output'; 
-            outputDiv.innerText = "> Output..."; 
-            pre.after(outputDiv);
-
+            const outputDiv = document.createElement('div'); outputDiv.className = 'code-output'; outputDiv.innerText = "> Output..."; pre.after(outputDiv);
             btn.addEventListener('click', () => {
-                const code = block.innerText;
-                outputDiv.classList.add('show'); 
-                const logs = []; 
-                const oldLog = console.log; 
-                console.log = (...args) => logs.push(args.join(' '));
-                
-                try { 
-                    eval(code); 
-                    outputDiv.innerText = logs.length > 0 ? logs.join('\n') : "Executed successfully"; 
-                    outputDiv.style.color = "#10b981"; 
-                } catch (err) { 
-                    outputDiv.innerText = "Error: " + err.message; 
-                    outputDiv.style.color = "#ef4444"; 
-                }
-                
+                const code = block.innerText; outputDiv.classList.add('show'); 
+                const logs = []; const oldLog = console.log; console.log = (...args) => logs.push(args.join(' '));
+                try { eval(code); outputDiv.innerText = logs.length > 0 ? logs.join('\n') : "Executed successfully"; outputDiv.style.color = "#10b981"; } 
+                catch (err) { outputDiv.innerText = "Error: " + err.message; outputDiv.style.color = "#ef4444"; }
                 console.log = oldLog;
             });
         });
     }
 
-    focusBtn.addEventListener('click', () => { 
-        sidebar.classList.add('hidden'); 
-        topHeader.classList.add('hidden'); 
-        outputPanel.classList.add('hidden'); 
-        workspace.classList.add('zen'); 
-        exitFocusBtn.classList.add('show'); 
-    });
-    
-    exitFocusBtn.addEventListener('click', () => { 
-        sidebar.classList.remove('hidden'); 
-        topHeader.classList.remove('hidden'); 
-        outputPanel.classList.remove('hidden'); 
-        workspace.classList.remove('zen'); 
-        exitFocusBtn.classList.remove('show'); 
-    });
-    
-    newNoteBtn.addEventListener('click', () => { 
-        userInput.value = ''; 
-        aiOutput.innerHTML = '<i class="fa-solid fa-layer-group"></i><p>Ready</p>'; 
-        aiOutput.classList.add('empty-state'); 
-        currentRawResponse = ""; 
-    });
-    
-    userInput.addEventListener('input', (e) => {
-        document.getElementById('inputStats').innerText = e.target.value.trim().split(/\s+/).length + ' words';
-    });
-
-    function showToast(msg) { 
-        toast.innerText = msg; 
-        toast.classList.add('show'); 
-        setTimeout(() => toast.classList.remove('show'), 2000); 
-    }
-    
-    function saveToList(key, title, content) { 
-        let list = JSON.parse(localStorage.getItem(key)) || []; 
-        list.unshift({
-            id: Date.now(), 
-            title: title.substring(0, 25) + "...", 
-            o: "", 
-            r: content
-        }); 
-        localStorage.setItem(key, JSON.stringify(list.slice(0, 20))); 
-    }
-    
+    focusBtn.addEventListener('click', () => { sidebar.classList.add('hidden'); topHeader.classList.add('hidden'); outputPanel.classList.add('hidden'); workspace.classList.add('zen'); exitFocusBtn.classList.add('show'); });
+    exitFocusBtn.addEventListener('click', () => { sidebar.classList.remove('hidden'); topHeader.classList.remove('hidden'); outputPanel.classList.remove('hidden'); workspace.classList.remove('zen'); exitFocusBtn.classList.remove('show'); });
+    newNoteBtn.addEventListener('click', () => { userInput.value = ''; aiOutput.innerHTML = '<i class="fa-solid fa-layer-group"></i><p>Ready</p>'; aiOutput.classList.add('empty-state'); currentRawResponse = ""; });
+    userInput.addEventListener('input', (e) => { document.getElementById('inputStats').innerText = e.target.value.trim().split(/\s+/).length + ' words'; });
+    function showToast(msg) { toast.innerText = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2000); }
+    function saveToList(key, title, content) { let list = JSON.parse(localStorage.getItem(key)) || []; list.unshift({ id: Date.now(), title: title.substring(0, 25) + "...", o: "", r: content }); localStorage.setItem(key, JSON.stringify(list.slice(0, 20))); }
     function loadList(key, container) {
-        if (!container) return; 
-        let list = JSON.parse(localStorage.getItem(key)) || []; 
-        container.innerHTML = '';
-        
+        if (!container) return; let list = JSON.parse(localStorage.getItem(key)) || []; container.innerHTML = '';
         list.forEach(item => {
-            let el = document.createElement('div'); 
-            el.className = 'list-item'; 
-            el.innerText = item.title;
-            
-            el.onclick = () => { 
-                if (item.o) userInput.value = item.o;
-                aiOutput.innerHTML = marked.parse(item.r); 
-                aiOutput.classList.remove('empty-state'); 
-                currentRawResponse = item.r; 
-                enableLiveCode();
-                if (window.innerWidth < 800) sidebar.classList.add('hidden');
-            };
-            
+            let el = document.createElement('div'); el.className = 'list-item'; el.innerText = item.title;
+            el.onclick = () => { if (item.o) userInput.value = item.o; aiOutput.innerHTML = marked.parse(item.r); aiOutput.classList.remove('empty-state'); currentRawResponse = item.r; enableLiveCode(); if (window.innerWidth < 800) sidebar.classList.add('hidden'); };
             container.appendChild(el);
         });
     }

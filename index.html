@@ -1,26 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EduSummarizer | AI Workspace</title>
-
+    
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
 
     <div class="app-container" id="appContainer">
@@ -29,12 +25,12 @@
                 <i class="fa-solid fa-brain logo-icon"></i>
                 <h2>EduSummarizer</h2>
             </div>
-
+            
             <nav class="nav-menu">
                 <button class="nav-btn active" id="newNoteBtn">
                     <i class="fa-solid fa-plus"></i> New Note
                 </button>
-
+                
                 <div class="nav-section">
                     <button class="nav-btn" id="historyToggle">
                         <i class="fa-solid fa-clock-rotate-left"></i> History
@@ -49,7 +45,6 @@
                     <div id="savedList" class="nav-list" style="display: none;"></div>
                 </div>
                 
-                <!-- Clear History Button -->
                 <button class="nav-btn clear-history-btn" id="clearHistoryBtn">
                     <i class="fa-solid fa-trash-can"></i> Clear History
                 </button>
@@ -72,106 +67,18 @@
                     <h1>Workspace</h1>
                 </div>
                 <div class="header-actions">
-
-                    <!-- From Uiverse.io by RiccardoRapelli -->
-                    <label class="switch">
-                        <input id="themeCheckbox" type="checkbox" />
-
-                        <div class="slider round">
-                            <div class="sun-moon">
-
-                                <!-- Moon dots -->
-                                <svg id="moon-dot-1" class="moon-dot" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                                <svg id="moon-dot-2" class="moon-dot" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                                <svg id="moon-dot-3" class="moon-dot" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                                <!-- Light rays -->
-                                <svg id="light-ray-1" class="light-ray" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                                <svg id="light-ray-2" class="light-ray" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                                <svg id="light-ray-3" class="light-ray" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                                <!-- Clouds (Dark) -->
-                                <svg id="cloud-1" class="cloud-dark" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                                <svg id="cloud-2" class="cloud-dark" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                                <svg id="cloud-3" class="cloud-dark" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                                <!-- Clouds (Light) -->
-                                <svg id="cloud-4" class="cloud-light" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                                <svg id="cloud-5" class="cloud-light" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                                <svg id="cloud-6" class="cloud-light" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="50"></circle>
-                                </svg>
-
-                            </div>
-
-                            <div class="stars">
-
-                                <svg id="star-1" class="star" viewBox="0 0 20 20">
-                                    <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 
-                                    C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 
-                                    C 10 10,10 10 ,0 10 Z"></path>
-                                </svg>
-
-                                <svg id="star-2" class="star" viewBox="0 0 20 20">
-                                    <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 
-                                    C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 
-                                    C 10 10,10 10 ,0 10 Z"></path>
-                                </svg>
-
-                                <svg id="star-3" class="star" viewBox="0 0 20 20">
-                                    <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 
-                                    C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 
-                                    C 10 10,10 10 ,0 10 Z"></path>
-                                </svg>
-
-                                <svg id="star-4" class="star" viewBox="0 0 20 20">
-                                    <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 
-                                    C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 
-                                    C 10 10,10 10 ,0 10 Z"></path>
-                                </svg>
-
-                            </div>
-                        </div>
-                    </label>
+                    <button id="themeBtn" class="theme-orb" title="Cycle Theme">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
 
                     <button class="action-btn secondary" id="focusBtn" title="Focus Mode">
                         <i class="fa-solid fa-expand"></i>
                     </button>
-
+                    
                     <button class="action-btn secondary" id="pdfBtn" title="Export PDF">
                         <i class="fa-solid fa-file-pdf"></i> PDF
                     </button>
-
+                    
                     <button class="action-btn primary" id="processBtn">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> Refine
                     </button>
@@ -194,10 +101,7 @@
                             <button class="chip" onclick="setTemplate('math')">Math</button>
                         </div>
                     </div>
-
-                    <textarea id="userInput"
-                        placeholder="Paste your educational content here for Grok to refine..."></textarea>
-
+                    <textarea id="userInput" placeholder="Paste your educational content here for Grok to refine..."></textarea>
                     <div class="panel-footer" id="inputFooter">
                         <span class="status-indicator" id="inputStats">0 words</span>
                     </div>
@@ -210,17 +114,15 @@
                             <button class="icon-btn" id="visualizeBtn" title="Create Diagram">
                                 <i class="fa-solid fa-diagram-project"></i>
                             </button>
-
                             <button class="icon-btn" id="saveNoteBtn" title="Save to Notebook">
                                 <i class="fa-regular fa-bookmark"></i>
                             </button>
-
                             <button class="icon-btn" id="copyBtn" title="Copy Text">
                                 <i class="fa-regular fa-copy"></i>
                             </button>
                         </div>
                     </div>
-
+                    
                     <div id="aiOutput" class="markdown-content empty-state">
                         <i class="fa-solid fa-sparkles"></i>
                         <p>Ready for refinement</p>
@@ -228,7 +130,7 @@
 
                     <div class="audio-player">
                         <div class="audio-info">
-                            <i class="fa-solid fa-podcast"></i>
+                            <i class="fa-solid fa-podcast"></i> 
                             <span>Podcast Mode</span>
                         </div>
                         <div class="audio-controls">
@@ -248,22 +150,17 @@
         <div class="palette-modal">
             <div class="palette-search">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="cmdInput" placeholder="Type a color (e.g. 'Neon Purple')..." autocomplete="off">
+                <input type="text" id="cmdInput" placeholder="Type a command (e.g. 'Theme')..." autocomplete="off">
                 <span class="palette-shortcut">Esc</span>
             </div>
-
             <div class="palette-results" id="cmdResults"></div>
-
             <div class="palette-footer">
                 <span><kbd>↑↓</kbd> Navigate</span>
                 <span><kbd>↵</kbd> Select</span>
             </div>
         </div>
     </div>
-
     <div id="toast" class="toast">Action Complete</div>
-
     <script src="script.js"></script>
 </body>
-
 </html>
