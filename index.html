@@ -70,72 +70,94 @@
 
                     <!-- From Uiverse.io by RiccardoRapelli -->
                     <label class="switch">
-                        <input id="input" type="checkbox" checked="darkTheme" />
+                        <input id="themeCheckbox" type="checkbox" />
+
                         <div class="slider round">
                             <div class="sun-moon">
+
+                                <!-- Moon dots -->
                                 <svg id="moon-dot-1" class="moon-dot" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
+
                                 <svg id="moon-dot-2" class="moon-dot" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
+
                                 <svg id="moon-dot-3" class="moon-dot" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
+
+                                <!-- Light rays -->
                                 <svg id="light-ray-1" class="light-ray" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
+
                                 <svg id="light-ray-2" class="light-ray" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
+
                                 <svg id="light-ray-3" class="light-ray" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
 
+                                <!-- Clouds (Dark) -->
                                 <svg id="cloud-1" class="cloud-dark" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
+
                                 <svg id="cloud-2" class="cloud-dark" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
+
                                 <svg id="cloud-3" class="cloud-dark" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
+
+                                <!-- Clouds (Light) -->
                                 <svg id="cloud-4" class="cloud-light" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
+
                                 <svg id="cloud-5" class="cloud-light" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
+
                                 <svg id="cloud-6" class="cloud-light" viewBox="0 0 100 100">
                                     <circle cx="50" cy="50" r="50"></circle>
                                 </svg>
+
                             </div>
+
                             <div class="stars">
+
                                 <svg id="star-1" class="star" viewBox="0 0 20 20">
-                                    <path
-                                        d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z">
-                                    </path>
+                                    <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 
+                                    C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 
+                                    C 10 10,10 10 ,0 10 Z"></path>
                                 </svg>
+
                                 <svg id="star-2" class="star" viewBox="0 0 20 20">
-                                    <path
-                                        d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z">
-                                    </path>
+                                    <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 
+                                    C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 
+                                    C 10 10,10 10 ,0 10 Z"></path>
                                 </svg>
+
                                 <svg id="star-3" class="star" viewBox="0 0 20 20">
-                                    <path
-                                        d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z">
-                                    </path>
+                                    <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 
+                                    C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 
+                                    C 10 10,10 10 ,0 10 Z"></path>
                                 </svg>
+
                                 <svg id="star-4" class="star" viewBox="0 0 20 20">
-                                    <path
-                                        d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 C 10 10,10 10 ,0 10 Z">
-                                    </path>
+                                    <path d="M 0 10 C 10 10,10 10 ,0 10 C 10 10 , 10 10 , 10 20 
+                                    C 10 10 , 10 10 , 20 10 C 10 10 , 10 10 , 10 0 
+                                    C 10 10,10 10 ,0 10 Z"></path>
                                 </svg>
+
                             </div>
                         </div>
                     </label>
-
 
                     <button class="action-btn secondary" id="focusBtn" title="Focus Mode">
                         <i class="fa-solid fa-expand"></i>
@@ -167,8 +189,10 @@
                             <button class="chip" onclick="setTemplate('math')">Math</button>
                         </div>
                     </div>
+
                     <textarea id="userInput"
                         placeholder="Paste your educational content here for Grok to refine..."></textarea>
+
                     <div class="panel-footer" id="inputFooter">
                         <span class="status-indicator" id="inputStats">0 words</span>
                     </div>
@@ -178,7 +202,6 @@
                     <div class="panel-head">
                         <span class="panel-title"><i class="fa-solid fa-robot"></i> AI Summary</span>
                         <div class="panel-actions">
-
                             <button class="icon-btn" id="visualizeBtn" title="Create Diagram">
                                 <i class="fa-solid fa-diagram-project"></i>
                             </button>
@@ -205,8 +228,7 @@
                         </div>
                         <div class="audio-controls">
                             <button class="audio-btn" id="stopAudioBtn"><i class="fa-solid fa-stop"></i></button>
-                            <button class="audio-btn main-play" id="playAudioBtn"><i
-                                    class="fa-solid fa-play"></i></button>
+                            <button class="audio-btn main-play" id="playAudioBtn"><i class="fa-solid fa-play"></i></button>
                             <button class="audio-btn speed" id="speedBtn">1x</button>
                         </div>
                     </div>
@@ -224,7 +246,9 @@
                 <input type="text" id="cmdInput" placeholder="Type a color (e.g. 'Neon Purple')..." autocomplete="off">
                 <span class="palette-shortcut">Esc</span>
             </div>
+
             <div class="palette-results" id="cmdResults"></div>
+
             <div class="palette-footer">
                 <span><kbd>↑↓</kbd> Navigate</span>
                 <span><kbd>↵</kbd> Select</span>
