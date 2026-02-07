@@ -349,38 +349,87 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 11. AUDIO & MIC
     // ==========================================
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition && micBtn) {
-        let recognition = new SpeechRecognition();
-        recognition.continuous = false; recognition.lang = 'en-US';
-        micBtn.addEventListener('click', () => {
-            if (micBtn.classList.contains('recording')) { recognition.stop(); } 
-            else { try { recognition.start(); micBtn.classList.add('recording'); showToast("Listening..."); } catch (e) { showToast("Mic Error"); } }
+    // ==========================================
+    // 11. AUDIO & MIC (UPDATED WITH VOICES)
+    // ==========================================
+    const voiceSelect = document.getElementById('voiceSelect');
+    let voices = [];
+    let speech = new SpeechSynthesisUtterance(); 
+    let speeds = [1, 1.5, 2]; 
+    let speedIndex = 0;
+
+    // --- VOICE LOADING LOGIC ---
+    function populateVoices() {
+        voices = window.speechSynthesis.getVoices();
+        voiceSelect.innerHTML = '';
+        
+        // Filter for English voices generally, or show all
+        // voices.forEach...
+        
+        voices.forEach((voice, index) => {
+            const option = document.createElement('option');
+            // Show Name (e.g., "Microsoft David - English (US)")
+            option.textContent = `${voice.name.substring(0, 20)}${voice.name.length > 20 ? '...' : ''}`;
+            option.value = index;
+            
+            // Auto-select the default voice
+            if (voice.default) option.selected = true;
+            
+            voiceSelect.appendChild(option);
         });
-        recognition.onresult = (event) => {
-            userInput.value += (userInput.value.length > 0 ? ' ' : '') + event.results[0][0].transcript;
-            userInput.dispatchEvent(new Event('input'));
-        };
-        recognition.onend = () => micBtn.classList.remove('recording');
     }
 
-    let speech = new SpeechSynthesisUtterance(); let speeds = [1, 1.5, 2]; let speedIndex = 0;
+    populateVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = populateVoices;
+    }
+
+    // --- PLAY BUTTON LOGIC ---
     if (playAudioBtn) {
         playAudioBtn.addEventListener('click', () => {
-            if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) { window.speechSynthesis.pause(); playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; } 
-            else if (window.speechSynthesis.paused) { window.speechSynthesis.resume(); playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; } 
+            if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) { 
+                window.speechSynthesis.pause(); 
+                playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; 
+            } 
+            else if (window.speechSynthesis.paused) { 
+                window.speechSynthesis.resume(); 
+                playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; 
+            } 
             else {
                 let t = window.getSelection().toString() || aiOutput.innerText || userInput.value;
                 if (!t || t.includes("Ready")) return;
-                window.speechSynthesis.cancel(); speech.text = t; speech.rate = speeds[speedIndex];
-                window.speechSynthesis.speak(speech); playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                
+                window.speechSynthesis.cancel(); 
+                speech.text = t; 
+                speech.rate = speeds[speedIndex];
+                
+                // SET THE SELECTED VOICE
+                const selectedVoiceIdx = voiceSelect.value;
+                if(voices[selectedVoiceIdx]) {
+                    speech.voice = voices[selectedVoiceIdx];
+                }
+
+                window.speechSynthesis.speak(speech); 
+                playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
             }
         });
     }
-    if (stopAudioBtn) { stopAudioBtn.addEventListener('click', () => { window.speechSynthesis.cancel(); playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; }); }
-    if (speedBtn) { speedBtn.addEventListener('click', () => { speedIndex = (speedIndex + 1) % speeds.length; speedBtn.innerText = speeds[speedIndex] + 'x'; }); }
-    speech.onend = () => playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
 
+    if (stopAudioBtn) { 
+        stopAudioBtn.addEventListener('click', () => { 
+            window.speechSynthesis.cancel(); 
+            playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; 
+        }); 
+    }
+    
+    if (speedBtn) { 
+        speedBtn.addEventListener('click', () => { 
+            speedIndex = (speedIndex + 1) % speeds.length; 
+            speedBtn.innerText = speeds[speedIndex] + 'x'; 
+        }); 
+    }
+    
+    speech.onend = () => playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
     // ==========================================
     // 12. HELPER FUNCTIONS
     // ==========================================

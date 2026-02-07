@@ -191,3 +191,29 @@ pre { background: #000; padding: 15px; border-radius: 6px; border: 1px solid var
 .palette-footer { background: var(--bg-app); padding: 8px 20px; font-size: 0.75rem; color: var(--text-secondary); border-top: 1px solid var(--border); display: flex; gap: 15px; }
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary); gap: 1rem; }
 .empty-state i { font-size: 3rem; color: var(--primary); opacity: 0.8; }
+
+/* --- VOICE SELECTOR --- */
+.voice-select {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    border-radius: 8px;
+    padding: 4px 8px;
+    outline: none;
+    cursor: pointer;
+    max-width: 120px; /* Limits width so it doesn't break layout */
+    margin-right: 10px;
+    font-family: inherit;
+}
+
+.voice-select:hover {
+    color: var(--text-main);
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.voice-select option {
+    background: var(--bg-panel);
+    color: var(--text-main);
+}
