@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     let currentRawResponse = ""; 
 
-    // --- 3. LOGIN LOGIC (NEW) ---
+    // --- 3. LOGIN LOGIC ---
     if(loginBtn) {
         loginBtn.addEventListener('click', () => {
             const user = loginUser.value.trim();
@@ -347,10 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 11. AUDIO & MIC
-    // ==========================================
-    // ==========================================
-    // 11. AUDIO & MIC (UPDATED WITH VOICES)
+    // 11. AUDIO & MIC (CURATED ACCENTS)
     // ==========================================
     const voiceSelect = document.getElementById('voiceSelect');
     let voices = [];
@@ -360,23 +357,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- VOICE LOADING LOGIC ---
     function populateVoices() {
-        voices = window.speechSynthesis.getVoices();
+        const allVoices = window.speechSynthesis.getVoices();
         voiceSelect.innerHTML = '';
         
-        // Filter for English voices generally, or show all
-        // voices.forEach...
-        
-        voices.forEach((voice, index) => {
-            const option = document.createElement('option');
-            // Show Name (e.g., "Microsoft David - English (US)")
-            option.textContent = `${voice.name.substring(0, 20)}${voice.name.length > 20 ? '...' : ''}`;
-            option.value = index;
-            
-            // Auto-select the default voice
-            if (voice.default) option.selected = true;
-            
-            voiceSelect.appendChild(option);
+        // Curated list of accents
+        const preferredAccents = [
+            { id: 'us-female', name: '🇺🇸 US Female', keywords: ['Google US English', 'Zira', 'Samantha'] },
+            { id: 'us-male', name: '🇺🇸 US Male', keywords: ['Google US English', 'David', 'Alex'] },
+            { id: 'uk-female', name: '🇬🇧 UK Female', keywords: ['Google UK English Female', 'Susan', 'Hazel'] },
+            { id: 'uk-male', name: '🇬🇧 UK Male', keywords: ['Google UK English Male', 'George', 'Daniel'] },
+            { id: 'aus', name: '🇦🇺 Australian', keywords: ['Google Australian', 'Karen', 'Catherine'] },
+            { id: 'ind', name: '🇮🇳 Indian', keywords: ['Google हिन्दी', 'Rishi', 'Veena', 'Indian'] } 
+        ];
+
+        let addedCount = 0;
+        preferredAccents.forEach(accent => {
+            const match = allVoices.find(v => accent.keywords.some(k => v.name.includes(k)));
+            if (match) {
+                const option = document.createElement('option');
+                option.textContent = accent.name;
+                option.value = match.name; // Store actual voice name as value
+                voiceSelect.appendChild(option);
+                addedCount++;
+            }
         });
+
+        // Fallback: If no curated voices found, list first 5 English voices
+        if(addedCount === 0) {
+            allVoices.filter(v => v.lang.includes('en')).slice(0, 5).forEach(v => {
+                const option = document.createElement('option');
+                option.textContent = v.name.substring(0, 25);
+                option.value = v.name;
+                voiceSelect.appendChild(option);
+            });
+        }
     }
 
     populateVoices();
@@ -404,9 +418,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 speech.rate = speeds[speedIndex];
                 
                 // SET THE SELECTED VOICE
-                const selectedVoiceIdx = voiceSelect.value;
-                if(voices[selectedVoiceIdx]) {
-                    speech.voice = voices[selectedVoiceIdx];
+                const selectedName = voiceSelect.value;
+                const allVoices = window.speechSynthesis.getVoices();
+                const chosenVoice = allVoices.find(v => v.name === selectedName);
+                
+                if(chosenVoice) {
+                    speech.voice = chosenVoice;
                 }
 
                 window.speechSynthesis.speak(speech); 
@@ -430,9 +447,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     speech.onend = () => playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+    
     // ==========================================
     // 12. HELPER FUNCTIONS
     // ==========================================
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition && micBtn) {
+        let recognition = new SpeechRecognition();
+        recognition.continuous = false; recognition.lang = 'en-US';
+        micBtn.addEventListener('click', () => {
+            if (micBtn.classList.contains('recording')) { recognition.stop(); } 
+            else { try { recognition.start(); micBtn.classList.add('recording'); showToast("Listening..."); } catch (e) { showToast("Mic Error"); } }
+        });
+        recognition.onresult = (event) => {
+            userInput.value += (userInput.value.length > 0 ? ' ' : '') + event.results[0][0].transcript;
+            userInput.dispatchEvent(new Event('input'));
+        };
+        recognition.onend = () => micBtn.classList.remove('recording');
+    }
+
     function enableLiveCode() {
         const codes = aiOutput.querySelectorAll('pre code');
         codes.forEach(block => {
