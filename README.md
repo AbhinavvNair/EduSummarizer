@@ -8,7 +8,7 @@ This project demonstrates a complete **ML + NLP + DevOps workflow**, making it b
 
 ---
 
-## 🚀 Key Features
+## 🚀 Key Features ( More reliable features will be added in the future )
 
 - Custom **decoder-only Transformer (GPT-style)** architecture  
 - Educational **text summarization and explanation**
@@ -56,7 +56,7 @@ EduSummarizer was built to:
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ System Architecture ( Flow of execution of this project )
 
 1. Raw educational text ingestion  
 2. SentencePiece tokenizer training (BPE)  
