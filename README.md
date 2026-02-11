@@ -69,7 +69,7 @@ EduSummarizer was built to:
 
 ---
 
-## 🧩 Model Architecture
+## 🧩 Model Architecture ( The Entire Structure of the Model )
 
 The model follows a **GPT-style decoder-only Transformer**:
 
@@ -94,7 +94,7 @@ This architecture was chosen for **simplicity, interpretability, and efficiency*
 
 ---
 
-## 📚 Dataset
+## 📚 Dataset 
 
 ### Data Sources
 - Wikipedia (educational topics)
@@ -216,7 +216,7 @@ These limitations are acceptable for an **academic and learning-focused project*
 
 ---
 
-## 🔮 Future Enhancements
+## 🔮 Future Enhancements ( Future implementations to be done )
 
 - Larger and deeper models
 - Retrieval-Augmented Generation (RAG)
