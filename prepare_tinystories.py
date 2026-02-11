@@ -16,4 +16,5 @@ def prepare_tinystories():
             f.write(item['text'].strip() + "\n<|endoftext|>\n")
 
 if __name__ == "__main__":
+    # calling the function to prepare the dataset
     prepare_tinystories()
