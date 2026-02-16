@@ -233,9 +233,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function renderSaved() {
-        userInput.value = note.title || "";
+        savedList.innerHTML = "";
 
         savedNotesData.forEach(note => {
+
             const wrapper = document.createElement("div");
             wrapper.className = "list-item";
             wrapper.style.display = "flex";
@@ -247,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
             title.style.cursor = "pointer";
 
             title.onclick = () => {
-                userInput.value = note.title || "";
+                userInput.value = note.prompt || "";
                 aiOutput.innerHTML = marked.parse(note.content);
                 aiOutput.classList.remove("empty-state");
                 currentRawResponse = note.content;
@@ -285,6 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             savedList.appendChild(wrapper);
         });
     }
+
 
 
     let currentRawResponse = "";
