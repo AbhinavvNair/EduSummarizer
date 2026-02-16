@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    window.speechSynthesis.cancel();
 
     // --- 1. INITIALIZATION ---
     if (typeof mermaid !== 'undefined') {
@@ -133,18 +134,165 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error();
             }
 
+            const userData = await response.json();
+            const email = userData.email;
+            const username = email.split("@")[0];
+
+            updateUserCard(username);
+
             loginScreen.style.display = 'none';
             appContainer.classList.remove('hidden');
+
+            await loadNotesFromBackend();   // 🔥 ADD THIS
 
         } catch {
             forceLogout();
         }
-
     }
 
 
+    async function loadNotesFromBackend() {
+        try {
+            const response = await apiFetch("http://127.0.0.1:8000/notes");
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch notes");
+            }
+
+            const notes = await response.json();
+
+            historyNotes = notes.filter(n => !n.is_bookmarked);
+            historyDisplayCount = 10;
+            savedNotesData = notes.filter(n => n.is_bookmarked);
+
+            renderHistory();
+            renderSaved();
+
+        } catch (error) {
+            console.error("Error loading notes:", error);
+        }
+    }
+
+    function renderHistory() {
+        historyList.innerHTML = "";
+
+        const visibleNotes = historyNotes.slice(0, historyDisplayCount);
+
+        visibleNotes.forEach(note => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "list-item";
+
+            const title = document.createElement("span");
+            title.innerText = note.title || note.content.substring(0, 25);
+            title.style.cursor = "pointer";
+
+            title.onclick = () => {
+                userInput.value = "";
+                aiOutput.innerHTML = marked.parse(note.content);
+                aiOutput.classList.remove("empty-state");
+                currentRawResponse = note.content;
+                lastGeneratedNoteId = note.id;
+                enableLiveCode();
+            };
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "delete-btn";
+            deleteBtn.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
+            deleteBtn.style.background = "transparent";
+            deleteBtn.style.border = "none";
+            deleteBtn.style.color = "#ef4444";
+            deleteBtn.style.cursor = "pointer";
+
+            deleteBtn.onclick = async (e) => {
+                e.stopPropagation();
+                showDeleteModal(note.id);
+            };
+
+            wrapper.appendChild(title);
+            wrapper.appendChild(deleteBtn);
+            historyList.appendChild(wrapper);
+        });
+
+        // SHOW MORE BUTTON
+        if (historyNotes.length > historyDisplayCount) {
+            const showMore = document.createElement("div");
+            showMore.className = "list-item";
+            showMore.style.textAlign = "center";
+            showMore.style.fontWeight = "600";
+            showMore.style.color = "var(--primary)";
+            showMore.innerText = "Show More";
+
+            showMore.onclick = () => {
+                historyDisplayCount += 10;
+                renderHistory();
+            };
+
+            historyList.appendChild(showMore);
+        }
+    }
+
+
+    function renderSaved() {
+        savedList.innerHTML = "";
+
+        savedNotesData.forEach(note => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "list-item";
+            wrapper.style.display = "flex";
+            wrapper.style.justifyContent = "space-between";
+            wrapper.style.alignItems = "center";
+
+            const title = document.createElement("span");
+            title.innerText = note.title || note.content.substring(0, 25);
+            title.style.cursor = "pointer";
+
+            title.onclick = () => {
+                userInput.value = "";
+                aiOutput.innerHTML = marked.parse(note.content);
+                aiOutput.classList.remove("empty-state");
+                currentRawResponse = note.content;
+                lastGeneratedNoteId = note.id;
+                enableLiveCode();
+            };
+
+            const unbookmarkBtn = document.createElement("button");
+            unbookmarkBtn.innerHTML = `<i class="fa-solid fa-bookmark"></i>`;
+            unbookmarkBtn.style.background = "transparent";
+            unbookmarkBtn.style.border = "none";
+            unbookmarkBtn.style.color = "#818cf8";
+            unbookmarkBtn.style.cursor = "pointer";
+
+            unbookmarkBtn.onclick = async (e) => {
+                e.stopPropagation();
+
+                try {
+                    await apiFetch(
+                        `http://127.0.0.1:8000/notes/${note.id}/bookmark`,
+                        { method: "PATCH" }
+                    );
+
+                    await loadNotesFromBackend();
+                    showToast("Removed from saved");
+
+                } catch {
+                    showToast("Error updating bookmark");
+                }
+            };
+
+            wrapper.appendChild(title);
+            wrapper.appendChild(unbookmarkBtn);
+
+            savedList.appendChild(wrapper);
+        });
+    }
+
 
     let currentRawResponse = "";
+    let historyNotes = [];
+    let historyDisplayCount = 10;
+    let savedNotesData = [];
+    let lastGeneratedNoteId = null;
+
     let savedPrompt = localStorage.getItem('appPrompt') ||
         'You are an expert AI tutor. Summarize clearly using clean Markdown.';
 
@@ -271,6 +419,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 loginScreen.style.display = 'none';
                 appContainer.classList.remove('hidden');
+                await loadNotesFromBackend();
+
 
             } catch (error) {
                 loginError.textContent = error.message;
@@ -385,8 +535,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- 6. DATA & SIDEBAR ---
-    loadList('notesHistory', historyList);
-    loadList('savedNotes', savedList);
 
     if (historyToggle) {
         historyToggle.addEventListener('click', () => {
@@ -407,33 +555,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (clearHistoryBtn) {
-        clearHistoryBtn.addEventListener('click', () => {
-            if (confirm('Clear all history?')) {
-                localStorage.removeItem('notesHistory');
-                loadList('notesHistory', historyList);
-                if (historyList) { historyList.style.display = 'none'; historyToggle.classList.remove('active'); }
-                showToast('History Cleared');
+        clearHistoryBtn.addEventListener("click", async () => {
+            if (!confirm("Clear all history notes?")) return;
+
+            try {
+                for (const note of historyNotes) {
+                    await apiFetch(
+                        `http://127.0.0.1:8000/notes/${note.id}`,
+                        { method: "DELETE" }
+                    );
+                }
+
+                await loadNotesFromBackend();
+                showToast("History cleared");
+
+            } catch (error) {
+                showToast("Error clearing history");
             }
         });
     }
 
+
     if (saveNoteBtn) {
-        saveNoteBtn.addEventListener('click', () => {
-            const content = currentRawResponse || aiOutput.innerText;
-            let title = userInput.value.trim().substring(0, 25) || "Untitled Note";
-            if (!content || content.includes("Ready for refinement") || content.trim().length === 0) {
-                showToast("Generate a note first!"); return;
+        saveNoteBtn.addEventListener('click', async () => {
+
+            if (!lastGeneratedNoteId) {
+                showToast("No note selected to bookmark");
+                return;
             }
-            saveToList('savedNotes', title, content);
-            loadList('savedNotes', savedList);
-            if (savedList.style.display === 'none') {
-                savedList.style.display = 'flex';
-                savedToggle.classList.add('active');
-                if (historyList) { historyList.style.display = 'none'; historyToggle.classList.remove('active'); }
+
+            try {
+                const response = await apiFetch(
+                    `http://127.0.0.1:8000/notes/${lastGeneratedNoteId}/bookmark`,
+                    { method: "PATCH" }
+                );
+
+                if (!response.ok) {
+                    throw new Error("Bookmark failed");
+                }
+
+                await loadNotesFromBackend();
+                showToast("Bookmark updated");
+
+            } catch (error) {
+                showToast("Bookmark failed");
             }
-            showToast("Note Saved");
         });
     }
+
+
 
     // --- 7. CORE AI ENGINE ---
     processBtn.addEventListener('click', async () => {
@@ -469,8 +639,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             aiOutput.classList.remove('empty-state');
             enableLiveCode(); // New function for Insta-Code
-            saveToList('notesHistory', text, data.response);
-            loadList('notesHistory', historyList);
+            lastGeneratedNoteId = data.note_id;
+            await loadNotesFromBackend();
             showToast("Refinement Complete");
 
         } catch (error) { showToast("Error: " + error.message); }
@@ -479,12 +649,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 8. AUDIO & VOICES (CURATED + TRUMP HACK) ---
     let voices = [];
-    let speech = new SpeechSynthesisUtterance();
     let speeds = [1, 1.5, 2];
     let speedIndex = 0;
+    let currentUtterance = null;
+
 
     function populateVoices() {
         const allVoices = window.speechSynthesis.getVoices();
+
+        if (!allVoices || allVoices.length === 0) {
+            setTimeout(populateVoices, 200);
+            return;
+        }
+
         if (!voiceSelect) return;
         voiceSelect.innerHTML = '';
 
@@ -531,45 +708,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (playAudioBtn) {
         playAudioBtn.addEventListener('click', () => {
-            if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
-                window.speechSynthesis.pause();
+
+            // If paused → resume FIRST
+            if (speechSynthesis.paused) {
+                speechSynthesis.resume();
+                playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                return;
+            }
+
+            // If currently speaking → pause
+            if (speechSynthesis.speaking) {
+                speechSynthesis.pause();
                 playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                return;
             }
-            else if (window.speechSynthesis.paused) {
-                window.speechSynthesis.resume();
-                playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-            }
-            else {
-                let t = window.getSelection().toString() || aiOutput.innerText || userInput.value;
-                if (!t || t.includes("Ready")) return;
 
-                window.speechSynthesis.cancel();
-                speech.text = t;
+            // Otherwise → start fresh
+            const text = window.getSelection().toString() || aiOutput.innerText || userInput.value;
+            if (!text || text.includes("Ready")) return;
 
-                if (voiceSelect) {
-                    const selectedOption = voiceSelect.options[voiceSelect.selectedIndex];
-                    const selectedName = selectedOption.value;
-                    const customPitch = parseFloat(selectedOption.dataset.pitch) || 1;
-                    const customRateMod = parseFloat(selectedOption.dataset.rateMod) || 1;
+            speechSynthesis.cancel();
 
-                    const allVoices = window.speechSynthesis.getVoices();
-                    const chosenVoice = allVoices.find(v => v.name === selectedName);
+            currentUtterance = new SpeechSynthesisUtterance(text);
 
-                    if (chosenVoice) {
-                        speech.voice = chosenVoice;
-                        speech.pitch = customPitch;
-                        speech.rate = speeds[speedIndex] * customRateMod;
-                    }
+            if (voiceSelect && voiceSelect.options.length > 0) {
+                const selectedOption = voiceSelect.options[voiceSelect.selectedIndex];
+                const selectedName = selectedOption.value;
+                const customPitch = parseFloat(selectedOption.dataset.pitch) || 1;
+                const customRateMod = parseFloat(selectedOption.dataset.rateMod) || 1;
+
+                const voices = speechSynthesis.getVoices();
+                const chosenVoice = voices.find(v => v.name === selectedName);
+
+                if (chosenVoice) {
+                    currentUtterance.voice = chosenVoice;
+                    currentUtterance.pitch = customPitch;
+                    currentUtterance.rate = speeds[speedIndex] * customRateMod;
                 }
-                window.speechSynthesis.speak(speech);
-                playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
             }
+
+            currentUtterance.onend = () => {
+                playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                currentUtterance = null;
+            };
+
+            speechSynthesis.speak(currentUtterance);
+            playAudioBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
         });
     }
 
-    if (stopAudioBtn) { stopAudioBtn.addEventListener('click', () => { window.speechSynthesis.cancel(); playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; }); }
+
+    if (stopAudioBtn) {
+        stopAudioBtn.addEventListener('click', () => {
+            speechSynthesis.cancel();
+            currentUtterance = null;
+            playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        });
+    }
+
     if (speedBtn) { speedBtn.addEventListener('click', () => { speedIndex = (speedIndex + 1) % speeds.length; speedBtn.innerText = speeds[speedIndex] + 'x'; }); }
-    speech.onend = () => playAudioBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
 
     // --- 9. DEEP FOCUS NOISE (BROWN NOISE) ---
     let audioCtx;
@@ -807,9 +1004,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); toggleGodMode(); }
-        if (e.key === 'Escape' && cmdPalette) toggleGodMode();
+        // Ctrl + K → God Mode
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            toggleGodMode();
+        }
+
+        if (e.key === "Escape" && settingsModal && settingsModal.classList.contains("show")) {
+            closeSettingsBtn.click();
+        }
     });
+
     if (cmdPalette) { cmdPalette.addEventListener('click', (e) => { if (e.target === cmdPalette) toggleGodMode(); }); }
 
     const actions = [
@@ -836,10 +1041,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderCommands(query) {
         if (!cmdResults) return; cmdResults.innerHTML = '';
         const q = query.toLowerCase();
-        let history = (JSON.parse(localStorage.getItem('notesHistory')) || []).map(h => ({
-            title: h.title, icon: "fa-clock-rotate-left", tag: "History",
-            action: () => { userInput.value = h.o; aiOutput.innerHTML = marked.parse(h.r); aiOutput.classList.remove('empty-state'); currentRawResponse = h.r; enableLiveCode(); }
+        let history = historyNotes.map(note => ({
+            title: note.title || note.content.substring(0, 25),
+            icon: "fa-clock-rotate-left",
+            tag: "History",
+            action: () => {
+                userInput.value = "";
+                aiOutput.innerHTML = marked.parse(note.content);
+                aiOutput.classList.remove('empty-state');
+                currentRawResponse = note.content;
+                lastGeneratedNoteId = note.id;
+                enableLiveCode();
+            }
         }));
+
         const filteredActions = actions.filter(item => item.title.toLowerCase().includes(q) && item.tag !== 'Theme');
         const filteredThemes = actions.filter(item => item.title.toLowerCase().includes(q) && item.tag === 'Theme');
         const filteredHistory = history.filter(item => item.title.toLowerCase().includes(q));
@@ -884,15 +1099,20 @@ document.addEventListener('DOMContentLoaded', () => {
     newNoteBtn.addEventListener('click', () => { userInput.value = ''; aiOutput.innerHTML = '<i class="fa-solid fa-layer-group"></i><p>Ready</p>'; aiOutput.classList.add('empty-state'); currentRawResponse = ""; });
     userInput.addEventListener('input', (e) => { document.getElementById('inputStats').innerText = e.target.value.trim().split(/\s+/).length + ' words'; });
     function showToast(msg) { toast.innerText = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2000); }
-    function saveToList(key, title, content) { let list = JSON.parse(localStorage.getItem(key)) || []; list.unshift({ id: Date.now(), title: title.substring(0, 25) + "...", o: "", r: content }); localStorage.setItem(key, JSON.stringify(list.slice(0, 20))); }
-    function loadList(key, container) {
-        if (!container) return; let list = JSON.parse(localStorage.getItem(key)) || []; container.innerHTML = '';
-        list.forEach(item => {
-            let el = document.createElement('div'); el.className = 'list-item'; el.innerText = item.title;
-            el.onclick = () => { if (item.o) userInput.value = item.o; aiOutput.innerHTML = marked.parse(item.r); aiOutput.classList.remove('empty-state'); currentRawResponse = item.r; enableLiveCode(); if (window.innerWidth < 800) sidebar.classList.add('hidden'); };
-            container.appendChild(el);
-        });
+    function updateUserCard(username) {
+        const nameElement = document.querySelector(".user-info .name");
+        const avatarElement = document.querySelector(".user-avatar");
+
+        if (nameElement) {
+            nameElement.textContent = username;
+        }
+
+        if (avatarElement) {
+            const initials = username.substring(0, 2).toUpperCase();
+            avatarElement.textContent = initials;
+        }
     }
+
     // Validate token on page load
     validateSession();
 });

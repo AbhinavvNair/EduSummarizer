@@ -33,7 +33,7 @@
                 <i class="fa-solid fa-brain"></i>
             </div>
 
-            <h2 id="authTitle">Welcome Back</h2>
+            <h2 id="authTitle">EduSummarizer</h2>
             <p id="authSubtitle">Sign in to your AI Workspace</p>
 
             <div class="input-group">
@@ -89,14 +89,14 @@
                     <button class="nav-btn" id="historyToggle">
                         <i class="fa-solid fa-clock-rotate-left"></i> History
                     </button>
-                    <div id="historyList" class="nav-list" style="display: none;"></div>
+                    <div id="historyList" class="nav-list"></div>
                 </div>
 
                 <div class="nav-section">
                     <button class="nav-btn" id="savedToggle">
                         <i class="fa-solid fa-bookmark"></i> Saved Notes
                     </button>
-                    <div id="savedList" class="nav-list" style="display: none;"></div>
+                    <div id="savedList" class="nav-list"></div>
                 </div>
 
                 <button class="nav-btn" id="settingsBtn" style="margin-top: auto;">
@@ -284,6 +284,22 @@
 
         </div>
     </div>
+    <!-- DELETE CONFIRM MODAL -->
+    <div id="confirmOverlay" class="confirm-overlay">
+        <div class="confirm-modal glass-panel">
+            <h3>Delete Note?</h3>
+            <p>This action cannot be undone.</p>
+            <div class="confirm-actions">
+                <button id="cancelDeleteBtn" class="action-btn secondary">
+                    Cancel
+                </button>
+                <button id="confirmDeleteBtn" class="action-btn danger">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast">Action Complete</div>
     <script src="script.js"></script>
 </body>
