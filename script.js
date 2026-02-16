@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appContainer.classList.add('hidden');
         loginScreen.style.display = 'flex';
 
-        userInput.value = "";
+        userInput.value = note.title || "";
         aiOutput.innerHTML = '<i class="fa-solid fa-sparkles"></i><p>Ready for refinement</p>';
         aiOutput.classList.add('empty-state');
 
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
             title.style.cursor = "pointer";
 
             title.onclick = () => {
-                userInput.value = "";
+                userInput.value = note.title || "";
                 aiOutput.innerHTML = marked.parse(note.content);
                 aiOutput.classList.remove("empty-state");
                 currentRawResponse = note.content;
@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function renderSaved() {
-        savedList.innerHTML = "";
+        userInput.value = note.title || "";
 
         savedNotesData.forEach(note => {
             const wrapper = document.createElement("div");
@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
             title.style.cursor = "pointer";
 
             title.onclick = () => {
-                userInput.value = "";
+                userInput.value = note.title || "";
                 aiOutput.innerHTML = marked.parse(note.content);
                 aiOutput.classList.remove("empty-state");
                 currentRawResponse = note.content;
@@ -1046,7 +1046,7 @@ document.addEventListener('DOMContentLoaded', () => {
             icon: "fa-clock-rotate-left",
             tag: "History",
             action: () => {
-                userInput.value = "";
+                userInput.value = note.title || "";
                 aiOutput.innerHTML = marked.parse(note.content);
                 aiOutput.classList.remove('empty-state');
                 currentRawResponse = note.content;
@@ -1094,8 +1094,24 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onend = () => micBtn.classList.remove('recording');
     }
 
-    focusBtn.addEventListener('click', () => { sidebar.classList.add('hidden'); topHeader.classList.add('hidden'); outputPanel.classList.add('hidden'); workspace.classList.add('zen'); exitFocusBtn.classList.add('show'); });
-    exitFocusBtn.addEventListener('click', () => { sidebar.classList.remove('hidden'); topHeader.classList.remove('hidden'); outputPanel.classList.remove('hidden'); workspace.classList.remove('zen'); exitFocusBtn.classList.remove('show'); });
+    focusBtn.addEventListener('click', () => {
+        sidebar.classList.add('hidden');
+        topHeader.classList.add('hidden');
+        outputPanel.classList.add('hidden');
+        workspace.classList.add('zen');
+
+        exitFocusBtn.classList.remove('hidden');
+        exitFocusBtn.classList.add('show');
+    });
+    exitFocusBtn.addEventListener('click', () => {
+        sidebar.classList.remove('hidden');
+        topHeader.classList.remove('hidden');
+        outputPanel.classList.remove('hidden');
+        workspace.classList.remove('zen');
+
+        exitFocusBtn.classList.remove('show');
+        exitFocusBtn.classList.add('hidden');
+    });
     newNoteBtn.addEventListener('click', () => { userInput.value = ''; aiOutput.innerHTML = '<i class="fa-solid fa-layer-group"></i><p>Ready</p>'; aiOutput.classList.add('empty-state'); currentRawResponse = ""; });
     userInput.addEventListener('input', (e) => { document.getElementById('inputStats').innerText = e.target.value.trim().split(/\s+/).length + ' words'; });
     function showToast(msg) { toast.innerText = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2000); }
