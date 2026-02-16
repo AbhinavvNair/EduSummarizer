@@ -1278,3 +1278,17 @@ pre code {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
 }
+
+.list-item {
+    position: relative;
+}
+.hover-action {
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.list-item:hover .hover-action {
+    opacity: 1;
+    transform: scale(1);
+}

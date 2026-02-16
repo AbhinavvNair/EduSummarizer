@@ -78,12 +78,16 @@ document.addEventListener('DOMContentLoaded', () => {
         appContainer.classList.add('hidden');
         loginScreen.style.display = 'flex';
 
-        userInput.value = note.title || "";
+        userInput.value = "";
         aiOutput.innerHTML = '<i class="fa-solid fa-sparkles"></i><p>Ready for refinement</p>';
         aiOutput.classList.add('empty-state');
 
+        lastGeneratedNoteId = null;
+        currentRawResponse = "";
+
         showToast(message);
     }
+
 
     // --- GLOBAL API FETCH WRAPPER ---
     async function apiFetch(url, options = {}) {
@@ -179,48 +183,52 @@ document.addEventListener('DOMContentLoaded', () => {
         const visibleNotes = historyNotes.slice(0, historyDisplayCount);
 
         visibleNotes.forEach(note => {
+
             const wrapper = document.createElement("div");
             wrapper.className = "list-item";
 
             const title = document.createElement("span");
-            title.innerText = note.title || note.content.substring(0, 25);
+            title.textContent = note.title || note.content.substring(0, 25);
             title.style.cursor = "pointer";
 
             title.onclick = () => {
                 userInput.value = note.title || "";
                 aiOutput.innerHTML = marked.parse(note.content);
                 aiOutput.classList.remove("empty-state");
+
                 currentRawResponse = note.content;
                 lastGeneratedNoteId = note.id;
+
                 enableLiveCode();
             };
 
             const deleteBtn = document.createElement("button");
-            deleteBtn.className = "delete-btn";
+            deleteBtn.className = "delete-btn hover-action";
             deleteBtn.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
             deleteBtn.style.background = "transparent";
             deleteBtn.style.border = "none";
             deleteBtn.style.color = "#ef4444";
             deleteBtn.style.cursor = "pointer";
 
-            deleteBtn.onclick = async (e) => {
+            deleteBtn.onclick = (e) => {
                 e.stopPropagation();
                 showDeleteModal(note.id);
             };
 
             wrapper.appendChild(title);
             wrapper.appendChild(deleteBtn);
+
             historyList.appendChild(wrapper);
         });
 
-        // SHOW MORE BUTTON
+        // Show More button
         if (historyNotes.length > historyDisplayCount) {
             const showMore = document.createElement("div");
             showMore.className = "list-item";
             showMore.style.textAlign = "center";
             showMore.style.fontWeight = "600";
             showMore.style.color = "var(--primary)";
-            showMore.innerText = "Show More";
+            showMore.textContent = "Show More";
 
             showMore.onclick = () => {
                 historyDisplayCount += 10;
@@ -230,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
             historyList.appendChild(showMore);
         }
     }
+
 
 
     function renderSaved() {
@@ -244,19 +253,22 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.style.alignItems = "center";
 
             const title = document.createElement("span");
-            title.innerText = note.title || note.content.substring(0, 25);
+            title.textContent = note.title || note.content.substring(0, 25);
             title.style.cursor = "pointer";
 
             title.onclick = () => {
-                userInput.value = note.prompt || "";
+                userInput.value = note.title || "";
                 aiOutput.innerHTML = marked.parse(note.content);
                 aiOutput.classList.remove("empty-state");
+
                 currentRawResponse = note.content;
                 lastGeneratedNoteId = note.id;
+
                 enableLiveCode();
             };
 
             const unbookmarkBtn = document.createElement("button");
+            unbookmarkBtn.className = "hover-action";
             unbookmarkBtn.innerHTML = `<i class="fa-solid fa-bookmark"></i>`;
             unbookmarkBtn.style.background = "transparent";
             unbookmarkBtn.style.border = "none";
@@ -267,10 +279,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.stopPropagation();
 
                 try {
-                    await apiFetch(
+                    const response = await apiFetch(
                         `http://127.0.0.1:8000/notes/${note.id}/bookmark`,
                         { method: "PATCH" }
                     );
+
+                    if (!response.ok) throw new Error();
 
                     await loadNotesFromBackend();
                     showToast("Removed from saved");
@@ -286,6 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
             savedList.appendChild(wrapper);
         });
     }
+
 
 
 
@@ -922,6 +937,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         console.log = oldLog;
         pre.after(outputDiv);
+    }
+    async function showDeleteModal(noteId) {
+        const confirmed = confirm("Are you sure you want to delete this note?");
+
+        if (!confirmed) return;
+
+        try {
+            const response = await apiFetch(
+                `http://127.0.0.1:8000/notes/${noteId}`,
+                { method: "DELETE" }
+            );
+
+            if (!response.ok) {
+                throw new Error("Delete failed");
+            }
+
+            await loadNotesFromBackend();
+            showToast("Note deleted");
+
+        } catch (error) {
+            showToast("Error deleting note");
+        }
     }
 
     // --- 11. EXTRAS (PDF, VISUALIZE, GOD MODE) ---

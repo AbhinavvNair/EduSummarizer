@@ -41,6 +41,7 @@ class NoteResponse(BaseModel):
     title: str | None
     content: str
     created_at: datetime
+    is_bookmarked: bool   # ← ADD THIS
 
     class Config:
         from_attributes = True
