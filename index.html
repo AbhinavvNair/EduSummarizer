@@ -261,24 +261,29 @@
                     </small>
                 </div>
 
-                <!-- Change Password Section -->
                 <div class="setting-group" style="margin-top:25px;">
                     <label>Change Password</label>
 
-                    <input type="password" id="currentPassword" placeholder="Current Password"
-                        style="margin-top:10px; width:100%; padding:8px;">
+                    <div class="input-group">
+                        <i class="fa-solid fa-key"></i>
+                        <input type="password" id="currentPassword" placeholder="Current Password">
+                    </div>
 
-                    <input type="password" id="newPassword" placeholder="New Password"
-                        style="margin-top:10px; width:100%; padding:8px;">
+                    <div class="input-group">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="newPassword" placeholder="New Password">
+                    </div>
 
-                    <input type="password" id="confirmNewPassword" placeholder="Confirm New Password"
-                        style="margin-top:10px; width:100%; padding:8px;">
+                    <div class="input-group">
+                        <i class="fa-solid fa-shield-check"></i>
+                        <input type="password" id="confirmNewPassword" placeholder="Confirm New Password">
+                    </div>
 
-                    <button id="changePasswordBtn" class="login-btn fluid-gradient" style="margin-top:15px;">
-                        Update Password
+                    <button id="changePasswordBtn" class="login-btn fluid-gradient"
+                        style="width: 100%; margin-top: 10px;">
+                        Update Password <i class="fa-solid fa-rotate" style="margin-left: 8px; font-size: 0.8rem;"></i>
                     </button>
                 </div>
-
             </div>
 
         </div>
