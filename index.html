@@ -162,6 +162,7 @@
             </header>
 
             <div class="workspace" id="workspace">
+                
                 <div class="panel input-panel" id="inputPanel">
                     <div class="panel-head">
                         <div class="head-left">
@@ -183,6 +184,8 @@
                         <span class="status-indicator" id="inputStats">0 words</span>
                     </div>
                 </div>
+
+                <div class="resize-handler" id="resizeHandler" title="Drag to resize"></div>
 
                 <div class="panel output-panel" id="outputPanel">
                     <div class="panel-head">
@@ -219,6 +222,7 @@
                         </div>
                     </div>
                 </div>
+                
             </div>
 
             <button id="exitFocusBtn" class="hidden"><i class="fa-solid fa-compress"></i> Exit Focus</button>
@@ -261,30 +265,25 @@
                 <div class="setting-group" style="margin-top:25px;">
                     <label>Change Password</label>
 
-                    <div class="input-group">
-                        <i class="fa-solid fa-key"></i>
-                        <input type="password" id="currentPassword" placeholder="Current Password">
-                    </div>
+                    <input type="password" id="currentPassword" placeholder="Current Password"
+                        style="margin-top:10px; width:100%; padding:8px;">
 
-                    <div class="input-group">
-                        <i class="fa-solid fa-lock"></i>
-                        <input type="password" id="newPassword" placeholder="New Password">
-                    </div>
+                    <input type="password" id="newPassword" placeholder="New Password"
+                        style="margin-top:10px; width:100%; padding:8px;">
 
-                    <div class="input-group">
-                        <i class="fa-solid fa-shield-check"></i>
-                        <input type="password" id="confirmNewPassword" placeholder="Confirm New Password">
-                    </div>
+                    <input type="password" id="confirmNewPassword" placeholder="Confirm New Password"
+                        style="margin-top:10px; width:100%; padding:8px;">
 
-                    <button id="changePasswordBtn" class="login-btn fluid-gradient"
-                        style="width: 100%; margin-top: 10px;">
-                        Update Password <i class="fa-solid fa-rotate" style="margin-left: 8px; font-size: 0.8rem;"></i>
+                    <button id="changePasswordBtn" class="login-btn fluid-gradient" style="margin-top:15px;">
+                        Update Password
                     </button>
                 </div>
+
             </div>
 
         </div>
     </div>
+    
     <div id="confirmOverlay" class="confirm-overlay">
         <div class="confirm-modal glass-panel">
             <h3>Delete Note?</h3>

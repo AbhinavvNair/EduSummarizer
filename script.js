@@ -1170,4 +1170,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Validate token on page load
     validateSession();
+
+    // ==========================================
+    // 12. IDE-STYLE DRAGGABLE SPLITTER
+    // ==========================================
+    const resizeHandler = document.getElementById('resizeHandler');
+    const inputPanel = document.getElementById('inputPanel');
+    // Note: 'workspace' is already defined earlier in your script
+    let isResizing = false;
+
+    if (resizeHandler && inputPanel && workspace) {
+        // 1. Mouse Down - Start dragging
+        resizeHandler.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.classList.add('resizing');
+            resizeHandler.classList.add('active');
+        });
+
+        // 2. Mouse Move - Calculate new widths dynamically
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            // Calculate mouse position relative to the workspace container
+            const workspaceRect = workspace.getBoundingClientRect();
+            let newWidthPct = ((e.clientX - workspaceRect.left) / workspaceRect.width) * 100;
+            
+            // Constrain the panels so they don't get too small (min 20%, max 80%)
+            if (newWidthPct < 20) newWidthPct = 20;
+            if (newWidthPct > 80) newWidthPct = 80;
+            
+            // Apply the new width to the input panel
+            inputPanel.style.flex = `0 0 calc(${newWidthPct}% - 8px)`;
+        });
+
+        // 3. Mouse Up - Stop dragging
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.classList.remove('resizing');
+                resizeHandler.classList.remove('active');
+            }
+        });
+    }
 });

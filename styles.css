@@ -1357,3 +1357,52 @@ pre code {
         0 0 60px rgba(129, 140, 248, 0.3);
     transform: scale(1.03);
 }
+/* ==========================================
+   IDE-STYLE DRAGGABLE SPLITTER
+   ========================================== */
+
+.workspace {
+    gap: 0; /* Remove default gap, the handler will provide the spacing */
+}
+
+.panel.input-panel {
+    flex: 0 0 calc(50% - 8px); /* Start at a perfect 50/50 split */
+}
+
+.panel.output-panel {
+    flex: 1; /* Automatically takes up whatever space is left over */
+}
+
+.resize-handler {
+    width: 16px;
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+/* The visible 'pill' inside the invisible handler */
+.resize-handler::after {
+    content: '';
+    width: 4px;
+    height: 40px;
+    background: var(--border);
+    border-radius: 4px;
+    transition: background 0.2s, height 0.2s, width 0.2s;
+}
+
+/* Hover and Dragging Glow Effects */
+.resize-handler:hover::after,
+.resize-handler.active::after {
+    background: var(--primary);
+    height: 100%; /* Expands to full height when dragging */
+    width: 6px;
+    box-shadow: 0 0 10px var(--orb-glow);
+}
+
+/* Stops text from highlighting while you are dragging the mouse */
+body.resizing {
+    cursor: col-resize !important;
+    user-select: none; 
+}
