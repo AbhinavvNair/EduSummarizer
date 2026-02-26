@@ -210,4 +210,71 @@ document.addEventListener('DOMContentLoaded', () => {
     $('resizeHandler')?.addEventListener('mousedown', () => { isResizing = true; document.body.classList.add('resizing'); $('resizeHandler').classList.add('active'); });
     document.addEventListener('mousemove', e => { if(!isResizing) return; const r = $('workspace').getBoundingClientRect(); let w = ((e.clientX - r.left)/r.width)*100; $('inputPanel').style.flex = `0 0 calc(${Math.max(20, Math.min(w, 80))}% - 8px)`; });
     document.addEventListener('mouseup', () => { isResizing = false; document.body.classList.remove('resizing'); $('resizeHandler')?.classList.remove('active'); });
+
+    // ==========================================
+    // 13. FLOATING HIGHLIGHT MENU
+    // ==========================================
+    const floatingMenu = $('floatingMenu');
+    let selectedTextForMenu = "";
+
+    userInput.addEventListener('mouseup', (e) => {
+        selectedTextForMenu = userInput.value.substring(userInput.selectionStart, userInput.selectionEnd).trim();
+        
+        if (selectedTextForMenu.length > 0) {
+            floatingMenu.style.left = `${e.pageX - 80}px`;
+            floatingMenu.style.top = `${e.pageY - 50}px`;
+            floatingMenu.classList.remove('hidden');
+            setTimeout(() => floatingMenu.classList.add('show'), 10);
+        } else {
+            hideFloatingMenu();
+        }
+    });
+
+    const hideFloatingMenu = () => { floatingMenu.classList.remove('show'); setTimeout(() => floatingMenu.classList.add('hidden'), 200); };
+    document.addEventListener('mousedown', (e) => { if (!floatingMenu.contains(e.target) && e.target !== userInput) hideFloatingMenu(); });
+    userInput.addEventListener('keydown', hideFloatingMenu);
+
+    document.querySelectorAll('.float-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const action = btn.dataset.action;
+            hideFloatingMenu();
+            
+            if (action === 'read') {
+                speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(selectedTextForMenu);
+                const selVoice = window.speechSynthesis.getVoices().find(v => v.name === $('voiceSelect').value); 
+                if(selVoice) utterance.voice = selVoice;
+                speechSynthesis.speak(utterance);
+                return;
+            }
+
+            const processBtnOrig = $('processBtn').innerHTML;
+            $('processBtn').disabled = true; $('processBtn').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
+            
+            let systemPromptAddon = "";
+            if (action === 'rewrite') systemPromptAddon = "Rewrite the following text to be more clear, professional, and engaging. Return ONLY the rewritten text.";
+            if (action === 'summarize') systemPromptAddon = "Summarize the following text concisely in bullet points.";
+            if (action === 'explain') systemPromptAddon = "Explain the following code or concept step-by-step so a beginner can understand.";
+
+            try {
+                const res = await apiFetch("http://127.0.0.1:8000/generate", { 
+                    method: "POST", headers: {"Content-Type":"application/json"}, 
+                    body: JSON.stringify({ prompt: `Instruction: ${systemPromptAddon}\n\nText:\n${selectedTextForMenu}` }) 
+                });
+                
+                if (!res.ok) throw new Error("Backend Error");
+                const data = await res.json();
+                
+                currentRawResponse = data.response; 
+                aiOutput.innerHTML = marked.parse(data.response); 
+                lastGeneratedNoteId = data.note_id;
+                
+                if (window.renderMathInElement) renderMathInElement(aiOutput, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }] });
+                aiOutput.classList.remove('empty-state'); enableLiveCode(); await loadNotes(); 
+                showToast(action.charAt(0).toUpperCase() + action.slice(1) + " Complete!");
+            } catch (err) { showToast(err.message); } 
+            finally { $('processBtn').disabled = false; $('processBtn').innerHTML = processBtnOrig; }
+        });
+    });
 });

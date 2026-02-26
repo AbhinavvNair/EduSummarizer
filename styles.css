@@ -124,3 +124,9 @@ pre code { display: block; padding: 20px; overflow-x: auto; font-family: 'Fira C
 .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1E293B; color: white; padding: 10px 20px; border-radius: 20px; border: 1px solid var(--border); opacity: 0; transition: opacity 0.3s; z-index: 200; } .toast.show { opacity: 1; }
 .confirm-actions { display: flex; gap: 10px; justify-content: center; } .action-btn.danger { background: #ef4444; } .action-btn.danger:hover { background: #dc2626; }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- FLOATING HIGHLIGHT MENU --- */
+.floating-menu { position: absolute; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--primary); border-radius: 8px; padding: 4px; display: flex; gap: 4px; box-shadow: 0 10px 25px rgba(0,0,0,0.5), 0 0 15px var(--orb-glow); z-index: 1000; opacity: 0; pointer-events: none; transform: translateY(10px); transition: opacity 0.2s, transform 0.2s; }
+.floating-menu.show { opacity: 1; pointer-events: all; transform: translateY(0); }
+.float-btn { background: transparent; border: none; color: var(--text-main); padding: 6px 10px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 500; font-family: inherit; transition: background 0.2s, color 0.2s; }
+.float-btn:hover { background: var(--primary); color: white; }

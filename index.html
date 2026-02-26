@@ -70,6 +70,7 @@
         </div>
 
     </div>
+    
     <div class="app-container hidden" id="appContainer">
         <aside class="sidebar" id="sidebar">
             <div class="logo-section">
@@ -178,8 +179,7 @@
                             <button class="chip" onclick="setTemplate('math')">Math</button>
                         </div>
                     </div>
-                    <textarea id="userInput"
-                        placeholder="Paste your educational content here for Grok to refine..."></textarea>
+                    <textarea id="userInput" placeholder="Paste your educational content here for Grok to refine..."></textarea>
                     <div class="panel-footer" id="inputFooter">
                         <span class="status-indicator" id="inputStats">0 words</span>
                     </div>
@@ -222,10 +222,17 @@
                         </div>
                     </div>
                 </div>
-                
             </div>
 
             <button id="exitFocusBtn" class="hidden"><i class="fa-solid fa-compress"></i> Exit Focus</button>
+
+            <div id="floatingMenu" class="floating-menu hidden">
+                <button class="float-btn" data-action="rewrite"><i class="fa-solid fa-wand-magic-sparkles"></i> Rewrite</button>
+                <button class="float-btn" data-action="summarize"><i class="fa-solid fa-list"></i> Summarize</button>
+                <button class="float-btn" data-action="explain"><i class="fa-solid fa-code"></i> Explain</button>
+                <button class="float-btn" data-action="read"><i class="fa-solid fa-volume-high"></i> Read</button>
+            </div>
+            
         </main>
     </div>
 
@@ -252,7 +259,6 @@
             </div>
 
             <div class="settings-body">
-
                 <div class="setting-group">
                     <label>AI System Prompt (Custom Instructions)</label>
                     <textarea id="settingPrompt" rows="3"
@@ -264,23 +270,17 @@
 
                 <div class="setting-group" style="margin-top:25px;">
                     <label>Change Password</label>
-
                     <input type="password" id="currentPassword" placeholder="Current Password"
                         style="margin-top:10px; width:100%; padding:8px;">
-
                     <input type="password" id="newPassword" placeholder="New Password"
                         style="margin-top:10px; width:100%; padding:8px;">
-
                     <input type="password" id="confirmNewPassword" placeholder="Confirm New Password"
                         style="margin-top:10px; width:100%; padding:8px;">
-
                     <button id="changePasswordBtn" class="login-btn fluid-gradient" style="margin-top:15px;">
                         Update Password
                     </button>
                 </div>
-
             </div>
-
         </div>
     </div>
     
@@ -289,12 +289,8 @@
             <h3>Delete Note?</h3>
             <p>This action cannot be undone.</p>
             <div class="confirm-actions">
-                <button id="cancelDeleteBtn" class="action-btn secondary">
-                    Cancel
-                </button>
-                <button id="confirmDeleteBtn" class="action-btn danger">
-                    Delete
-                </button>
+                <button id="cancelDeleteBtn" class="action-btn secondary">Cancel</button>
+                <button id="confirmDeleteBtn" class="action-btn danger">Delete</button>
             </div>
         </div>
     </div>
@@ -302,5 +298,4 @@
     <div id="toast" class="toast">Action Complete</div>
     <script src="script.js"></script>
 </body>
-
 </html>
