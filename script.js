@@ -301,4 +301,67 @@ document.addEventListener('DOMContentLoaded', () => {
             finally { $('processBtn').disabled = false; $('processBtn').innerHTML = processBtnOrig; }
         });
     });
+    // ==========================================
+    // 14. CONTEXTUAL AI CHAT SIDEBAR
+    // ==========================================
+    const chatSidebar = $('chatSidebar'), chatInput = $('chatInput'), chatMessages = $('chatMessages');
+    
+    // Toggle Sidebar
+    const toggleChat = () => { 
+        chatSidebar.classList.toggle('open'); 
+        if(chatSidebar.classList.contains('open')) chatInput.focus(); 
+    };
+    $('chatToggleBtn')?.addEventListener('click', toggleChat);
+    $('closeChatBtn')?.addEventListener('click', toggleChat);
+
+    // Append a message bubble
+    const appendMsg = (text, sender) => {
+        const div = document.createElement('div'); div.className = `chat-msg ${sender}`;
+        div.innerHTML = sender === 'ai' ? marked.parse(text) : text; 
+        chatMessages.appendChild(div); chatMessages.scrollTop = chatMessages.scrollHeight;
+        return div; // Return the div so we can target it for the typewriter effect
+    };
+
+    // Handle sending a chat message
+    const handleChatSend = async () => {
+        const msg = chatInput.value.trim(); if(!msg) return;
+        appendMsg(msg, 'user'); chatInput.value = '';
+        
+        // Grab context: Prioritize AI output, fallback to user input
+        const contextText = aiOutput.innerText.includes('Ready for refinement') ? userInput.value : aiOutput.innerText;
+        
+        if(!contextText.trim() || contextText.includes('Ready for refinement')) {
+            setTimeout(() => appendMsg("Please paste some text or generate a note first so I know what we are talking about!", 'ai'), 400);
+            return;
+        }
+
+        // Create an empty AI bubble with the typing cursor
+        const aiDiv = appendMsg("", 'ai');
+        aiDiv.classList.add('typing-cursor');
+        aiDiv.innerHTML = "Thinking...";
+
+        try {
+            // Combine strict instructions, context, and the user's question
+            const chatPrompt = `You are a helpful study assistant. Use the provided Context to answer the User's Question. Keep your answer concise, conversational, and format it nicely in markdown.\n\nContext:\n${contextText.substring(0, 3000)}\n\nUser Question:\n${msg}`;
+            
+            const res = await apiFetch("http://127.0.0.1:8000/generate", { 
+                method: "POST", headers: {"Content-Type":"application/json"}, 
+                body: JSON.stringify({ prompt: chatPrompt, temperature: 0.3 }) 
+            });
+            
+            if (!res.ok) throw new Error("API Error");
+            const data = await res.json();
+            
+            // Clear "Thinking..." and stream the real response!
+            aiDiv.innerHTML = "";
+            await streamText(aiDiv, data.response);
+            
+        } catch (err) {
+            aiDiv.innerHTML = "Error: " + err.message; 
+            aiDiv.classList.remove('typing-cursor');
+        }
+    };
+
+    $('sendChatBtn')?.addEventListener('click', handleChatSend);
+    chatInput?.addEventListener('keydown', (e) => { if(e.key === 'Enter') handleChatSend(); });
 });
