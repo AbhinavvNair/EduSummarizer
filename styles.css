@@ -130,3 +130,7 @@ pre code { display: block; padding: 20px; overflow-x: auto; font-family: 'Fira C
 .floating-menu.show { opacity: 1; pointer-events: all; transform: translateY(0); }
 .float-btn { background: transparent; border: none; color: var(--text-main); padding: 6px 10px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 500; font-family: inherit; transition: background 0.2s, color 0.2s; }
 .float-btn:hover { background: var(--primary); color: white; }
+
+/* --- TYPEWRITER CURSOR --- */
+.typing-cursor > *:last-child::after { content: ' ▋'; color: var(--primary); animation: blink 0.8s step-start infinite; }
+@keyframes blink { 50% { opacity: 0; } }

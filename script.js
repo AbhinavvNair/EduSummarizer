@@ -135,17 +135,53 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const showDeleteModal = async (id) => { if (confirm("Delete this note?")) { try { await apiFetch(`http://127.0.0.1:8000/notes/${id}`, { method: "DELETE" }); await loadNotes(); showToast("Note deleted"); } catch { showToast("Delete failed"); } } };
 
-    // --- CORE AI & EXTRAS ---
+
+    // ==========================================
+    // NEW: TYPEWRITER STREAMING ENGINE
+    // ==========================================
+    const streamText = async (container, rawText, onFinish) => {
+        container.classList.remove('empty-state');
+        container.classList.add('typing-cursor');
+        let i = 0, buffer = '';
+        return new Promise(resolve => {
+            const timer = setInterval(() => {
+                // Pushes 3 characters every 10ms for a fast, readable typing speed
+                buffer += rawText.substring(i, i + 3); 
+                i += 3;
+                container.innerHTML = marked.parse(buffer);
+                container.scrollTop = container.scrollHeight; // Auto-scroll to bottom
+                
+                if (i >= rawText.length) {
+                    clearInterval(timer); 
+                    container.innerHTML = marked.parse(rawText); // Ensure final exact match
+                    container.classList.remove('typing-cursor');
+                    if(onFinish) onFinish(); 
+                    resolve();
+                }
+            }, 10); 
+        });
+    };
+
+
+    // --- CORE AI ENGINE ---
     $('processBtn')?.addEventListener('click', async () => {
         const text = userInput.value.trim(); if (!text) return showToast("Enter notes first");
         const btn = $('processBtn'); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Thinking...';
+        
         try {
             const res = await apiFetch("http://127.0.0.1:8000/generate", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({prompt: text}) });
             if (!res.ok) throw new Error("Backend Error");
             const data = await res.json();
-            currentRawResponse = data.response; aiOutput.innerHTML = marked.parse(data.response); lastGeneratedNoteId = data.note_id;
-            if (window.renderMathInElement) renderMathInElement(aiOutput, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }] });
-            aiOutput.classList.remove('empty-state'); enableLiveCode(); await loadNotes(); showToast("Complete");
+            
+            currentRawResponse = data.response; lastGeneratedNoteId = data.note_id;
+            
+            // FIRE TYPEWRITER EFFECT
+            await streamText(aiOutput, data.response, () => {
+                if (window.renderMathInElement) renderMathInElement(aiOutput, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }] });
+                enableLiveCode();
+            });
+            
+            await loadNotes(); showToast("Complete");
         } catch (e) { showToast(e.message); } finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Refine'; }
     });
 
@@ -204,30 +240,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     $('pdfBtn')?.addEventListener('click', () => { if(!aiOutput.innerText) return; showToast("Generating PDF..."); html2pdf().from(aiOutput).save('note.pdf'); });
-    $('visualizeBtn')?.addEventListener('click', async () => { /* Same API call logic for mermaid, compact format */ });
 
     // IDE Splitter
     $('resizeHandler')?.addEventListener('mousedown', () => { isResizing = true; document.body.classList.add('resizing'); $('resizeHandler').classList.add('active'); });
     document.addEventListener('mousemove', e => { if(!isResizing) return; const r = $('workspace').getBoundingClientRect(); let w = ((e.clientX - r.left)/r.width)*100; $('inputPanel').style.flex = `0 0 calc(${Math.max(20, Math.min(w, 80))}% - 8px)`; });
     document.addEventListener('mouseup', () => { isResizing = false; document.body.classList.remove('resizing'); $('resizeHandler')?.classList.remove('active'); });
 
-    // ==========================================
-    // 13. FLOATING HIGHLIGHT MENU
-    // ==========================================
+    // --- FLOATING HIGHLIGHT MENU ---
     const floatingMenu = $('floatingMenu');
     let selectedTextForMenu = "";
 
     userInput.addEventListener('mouseup', (e) => {
         selectedTextForMenu = userInput.value.substring(userInput.selectionStart, userInput.selectionEnd).trim();
-        
         if (selectedTextForMenu.length > 0) {
-            floatingMenu.style.left = `${e.pageX - 80}px`;
-            floatingMenu.style.top = `${e.pageY - 50}px`;
-            floatingMenu.classList.remove('hidden');
-            setTimeout(() => floatingMenu.classList.add('show'), 10);
-        } else {
-            hideFloatingMenu();
-        }
+            floatingMenu.style.left = `${e.pageX - 80}px`; floatingMenu.style.top = `${e.pageY - 50}px`;
+            floatingMenu.classList.remove('hidden'); setTimeout(() => floatingMenu.classList.add('show'), 10);
+        } else hideFloatingMenu();
     });
 
     const hideFloatingMenu = () => { floatingMenu.classList.remove('show'); setTimeout(() => floatingMenu.classList.add('hidden'), 200); };
@@ -236,17 +264,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.float-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const action = btn.dataset.action;
-            hideFloatingMenu();
+            e.preventDefault(); const action = btn.dataset.action; hideFloatingMenu();
             
             if (action === 'read') {
-                speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(selectedTextForMenu);
-                const selVoice = window.speechSynthesis.getVoices().find(v => v.name === $('voiceSelect').value); 
-                if(selVoice) utterance.voice = selVoice;
-                speechSynthesis.speak(utterance);
-                return;
+                speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(selectedTextForMenu);
+                const selVoice = window.speechSynthesis.getVoices().find(v => v.name === $('voiceSelect').value); if(selVoice) utterance.voice = selVoice;
+                speechSynthesis.speak(utterance); return;
             }
 
             const processBtnOrig = $('processBtn').innerHTML;
@@ -262,17 +285,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: "POST", headers: {"Content-Type":"application/json"}, 
                     body: JSON.stringify({ prompt: `Instruction: ${systemPromptAddon}\n\nText:\n${selectedTextForMenu}` }) 
                 });
-                
                 if (!res.ok) throw new Error("Backend Error");
                 const data = await res.json();
                 
-                currentRawResponse = data.response; 
-                aiOutput.innerHTML = marked.parse(data.response); 
-                lastGeneratedNoteId = data.note_id;
+                currentRawResponse = data.response; lastGeneratedNoteId = data.note_id;
                 
-                if (window.renderMathInElement) renderMathInElement(aiOutput, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }] });
-                aiOutput.classList.remove('empty-state'); enableLiveCode(); await loadNotes(); 
-                showToast(action.charAt(0).toUpperCase() + action.slice(1) + " Complete!");
+                // FIRE TYPEWRITER EFFECT
+                await streamText(aiOutput, data.response, () => {
+                    if (window.renderMathInElement) renderMathInElement(aiOutput, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }] });
+                    enableLiveCode();
+                });
+                
+                await loadNotes(); showToast(action.charAt(0).toUpperCase() + action.slice(1) + " Complete!");
             } catch (err) { showToast(err.message); } 
             finally { $('processBtn').disabled = false; $('processBtn').innerHTML = processBtnOrig; }
         });
