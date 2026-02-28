@@ -156,5 +156,36 @@ pre code { display: block; padding: 20px; overflow-x: auto; font-family: 'Fira C
 .workspace { transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .workspace.chat-open { margin-right: 380px; }
 
-/* Find your .chat-sidebar and update the background */
-.chat-sidebar { position: absolute; top: 60px; right: -400px; width: 380px; height: calc(100% - 60px); background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 50; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
+/* --- CONTEXTUAL CHAT SIDEBAR (60FPS SMOOTH ANIMATION) --- */
+.chat-sidebar { 
+    position: absolute; 
+    top: 60px; 
+    right: 0; 
+    transform: translateX(100%); /* Hardware accelerated GPU slide */
+    width: 380px; 
+    height: calc(100% - 60px); 
+    background: var(--bg-panel); 
+    border-left: 1px solid var(--border); 
+    display: flex; 
+    flex-direction: column; 
+    opacity: 0; 
+    visibility: hidden;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, visibility 0.4s; 
+    z-index: 50; 
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5); 
+}
+
+.chat-sidebar.open { 
+    transform: translateX(0); 
+    opacity: 1; 
+    visibility: visible; 
+}
+
+/* Push the workspace out of the way smoothly */
+.workspace { 
+    transition: margin-right 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+}
+
+.workspace.chat-open { 
+    margin-right: 380px; 
+}
