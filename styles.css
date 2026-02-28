@@ -67,11 +67,57 @@ button, input, select, textarea, a,
 /* FIX 1: margin-top was previously an inline style on the button in HTML */
 .nav-btn.clear-history-btn { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; color: #ef4444; }
 .nav-btn.clear-history-btn:hover { background: rgba(239, 68, 68, 0.1); }
+.nav-btn.saved-decks-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+}
+
+.nav-btn.saved-decks-btn:hover {
+    background: rgba(255,255,255,0.05);
+    color: var(--primary);
+}
 .nav-list { margin: 5px 0 0 10px; border-left: 1px solid var(--border); padding: 0 6px 0 10px; display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .nav-list::-webkit-scrollbar { width: 6px; }
 .nav-list::-webkit-scrollbar-track { background: transparent; }
 .nav-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 .nav-list::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+#savedDecksList {
+    margin: 5px 0 0 10px;
+    border-left: 1px solid var(--border);
+    padding: 0 6px 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+#savedDecksList .list-item {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#savedDecksList .list-item:hover {
+    color: var(--text-main);
+    background: rgba(255,255,255,0.05);
+}
 .list-item { font-size: 0.85rem; color: var(--text-muted); padding: 8px; cursor: pointer; border-radius: 4px; position: relative; display: flex; justify-content: space-between; align-items: center; }
 .list-item:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
 .hover-action, .delete-btn { opacity: 0; transform: scale(0.9); transition: all 0.2s ease; }

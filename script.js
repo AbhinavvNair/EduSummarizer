@@ -63,6 +63,69 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // NEW — Render saved flashcard decks inside the sidebar
+    async function renderSavedDecksSidebar() {
+        const list = $('savedDecksList');
+        list.innerHTML = '<div class="list-item">Loading...</div>';
+
+        try {
+            const res = await apiFetch(`${API_BASE}/flashcards`);
+            if (!res.ok) throw new Error();
+            const decks = await res.json();
+
+            list.innerHTML = '';
+
+            if (decks.length === 0) {
+                list.innerHTML = '<div class="list-item">No saved decks</div>';
+                return;
+            }
+
+            decks.forEach(deck => {
+                const row = document.createElement('div');
+                row.className = "list-item";
+                row.style.display = "flex";
+                row.style.justifyContent = "space-between";
+
+                const label = document.createElement('span');
+                label.style.cursor = "pointer";
+                label.textContent = `${deck.count} · ${deck.topic}`;
+                label.onclick = () => {
+                    // Load deck into flashcard review
+                    const fcCardsLoaded = deck.cards.map((c, i) => ({ ...c, id: i }));
+
+                    // Set config for consistency
+                    document.getElementById('fcSavedScreen')?.classList.add('hidden');
+                    window.scrollTo(0, 0);
+
+                    // Use existing flashcard system
+                    window._loadDeckFromSidebar?.(fcCardsLoaded, deck.topic, deck.difficulty);
+
+                    // Collapse sidebar
+                    $('savedDecksList').style.display = 'none';
+                };
+
+                const del = document.createElement('button');
+                del.className = "hover-action";
+                del.style.background = "transparent";
+                del.style.border = "none";
+                del.style.cursor = "pointer";
+                del.style.color = "#ef4444";
+                del.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
+                del.onclick = async (e) => {
+                    e.stopPropagation();
+                    const r = await apiFetch(`${API_BASE}/flashcards/${deck.id}`, { method: "DELETE" });
+                    if (!r.ok) return showToast("Delete failed");
+                    showToast("Deck deleted");
+                    renderSavedDecksSidebar();
+                };
+
+                row.append(label, del);
+                list.appendChild(row);
+            });
+        } catch (e) {
+            list.innerHTML = '<div class="list-item">Failed to load decks</div>';
+        }
+    }
     (async function validateSession() {
         if (!(localStorage.getItem("access_token") || sessionStorage.getItem("access_token"))) return forceLogout("Please login to continue");
         try {
@@ -135,6 +198,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     $('historyToggle')?.addEventListener('click', () => toggleList('historyList', 'historyToggle'));
     $('savedToggle')?.addEventListener('click', () => toggleList('savedList', 'savedToggle'));
+    $('savedDecksToggle')?.addEventListener('click', async () => {
+        await renderSavedDecksSidebar();
+        toggleList('savedDecksList', 'savedDecksToggle');
+    });
 
     // FIX 8: Use Promise.all to delete notes in parallel instead of sequential await in a loop
     $('clearHistoryBtn')?.addEventListener("click", async () => {
@@ -840,6 +907,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         window._fcAskExit = fcAskExit;   // expose to global keydown handler
         window._fcShowStep = fcShowStep; // expose to global keydown handler
+        window._loadDeckFromSidebar = (cards, topic, difficulty) => {
+            fcCards = cards;
+            fcConfig.topic = topic;
+            fcConfig.difficulty = difficulty;
+            fcConfig.count = cards.length;
+
+            // Jump straight to Review screen
+            document.getElementById('fcReviewScreen').classList.remove('hidden');
+            fcRenderCardList();
+            document.getElementById('fcReviewMeta').textContent =
+                `${cards.length} cards · ${topic} · ${difficulty}`;
+        };
         el('fcExitCancelBtn').addEventListener('click', () => el('fcExitOverlay').classList.add('hidden'));
         el('fcExitConfirmBtn').addEventListener('click', () => {
             el('fcExitOverlay').classList.add('hidden');
