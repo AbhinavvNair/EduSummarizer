@@ -151,3 +151,10 @@ pre code { display: block; padding: 20px; overflow-x: auto; font-family: 'Fira C
 .chat-input-area input:focus { border-color: var(--primary); }
 .chat-input-area button { background: var(--primary); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, box-shadow 0.2s; }
 .chat-input-area button:hover { transform: scale(1.05); box-shadow: 0 0 10px var(--orb-glow); }
+
+/* --- WORKSPACE PUSH EFFECT FOR CHAT --- */
+.workspace { transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.workspace.chat-open { margin-right: 380px; }
+
+/* Find your .chat-sidebar and update the background */
+.chat-sidebar { position: absolute; top: 60px; right: -400px; width: 380px; height: calc(100% - 60px); background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 50; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }

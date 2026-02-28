@@ -135,9 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const showDeleteModal = async (id) => { if (confirm("Delete this note?")) { try { await apiFetch(`http://127.0.0.1:8000/notes/${id}`, { method: "DELETE" }); await loadNotes(); showToast("Note deleted"); } catch { showToast("Delete failed"); } } };
 
-
     // ==========================================
-    // NEW: TYPEWRITER STREAMING ENGINE
+    // TYPEWRITER STREAMING ENGINE
     // ==========================================
     const streamText = async (container, rawText, onFinish) => {
         container.classList.remove('empty-state');
@@ -145,15 +144,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let i = 0, buffer = '';
         return new Promise(resolve => {
             const timer = setInterval(() => {
-                // Pushes 3 characters every 10ms for a fast, readable typing speed
                 buffer += rawText.substring(i, i + 3); 
                 i += 3;
                 container.innerHTML = marked.parse(buffer);
-                container.scrollTop = container.scrollHeight; // Auto-scroll to bottom
+                container.scrollTop = container.scrollHeight; 
                 
                 if (i >= rawText.length) {
                     clearInterval(timer); 
-                    container.innerHTML = marked.parse(rawText); // Ensure final exact match
+                    container.innerHTML = marked.parse(rawText); 
                     container.classList.remove('typing-cursor');
                     if(onFinish) onFinish(); 
                     resolve();
@@ -161,7 +159,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 10); 
         });
     };
-
 
     // --- CORE AI ENGINE ---
     $('processBtn')?.addEventListener('click', async () => {
@@ -175,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             currentRawResponse = data.response; lastGeneratedNoteId = data.note_id;
             
-            // FIRE TYPEWRITER EFFECT
             await streamText(aiOutput, data.response, () => {
                 if (window.renderMathInElement) renderMathInElement(aiOutput, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }] });
                 enableLiveCode();
@@ -290,7 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 currentRawResponse = data.response; lastGeneratedNoteId = data.note_id;
                 
-                // FIRE TYPEWRITER EFFECT
                 await streamText(aiOutput, data.response, () => {
                     if (window.renderMathInElement) renderMathInElement(aiOutput, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }] });
                     enableLiveCode();
@@ -301,33 +296,32 @@ document.addEventListener('DOMContentLoaded', () => {
             finally { $('processBtn').disabled = false; $('processBtn').innerHTML = processBtnOrig; }
         });
     });
+
     // ==========================================
     // 14. CONTEXTUAL AI CHAT SIDEBAR
     // ==========================================
     const chatSidebar = $('chatSidebar'), chatInput = $('chatInput'), chatMessages = $('chatMessages');
     
-    // Toggle Sidebar
+    // Toggle Sidebar & Shrink Workspace
     const toggleChat = () => { 
         chatSidebar.classList.toggle('open'); 
+        $('workspace').classList.toggle('chat-open'); // <-- NEW LINE ADDED HERE
         if(chatSidebar.classList.contains('open')) chatInput.focus(); 
     };
     $('chatToggleBtn')?.addEventListener('click', toggleChat);
     $('closeChatBtn')?.addEventListener('click', toggleChat);
 
-    // Append a message bubble
     const appendMsg = (text, sender) => {
         const div = document.createElement('div'); div.className = `chat-msg ${sender}`;
         div.innerHTML = sender === 'ai' ? marked.parse(text) : text; 
         chatMessages.appendChild(div); chatMessages.scrollTop = chatMessages.scrollHeight;
-        return div; // Return the div so we can target it for the typewriter effect
+        return div; 
     };
 
-    // Handle sending a chat message
     const handleChatSend = async () => {
         const msg = chatInput.value.trim(); if(!msg) return;
         appendMsg(msg, 'user'); chatInput.value = '';
         
-        // Grab context: Prioritize AI output, fallback to user input
         const contextText = aiOutput.innerText.includes('Ready for refinement') ? userInput.value : aiOutput.innerText;
         
         if(!contextText.trim() || contextText.includes('Ready for refinement')) {
@@ -335,13 +329,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Create an empty AI bubble with the typing cursor
         const aiDiv = appendMsg("", 'ai');
         aiDiv.classList.add('typing-cursor');
         aiDiv.innerHTML = "Thinking...";
 
         try {
-            // Combine strict instructions, context, and the user's question
             const chatPrompt = `You are a helpful study assistant. Use the provided Context to answer the User's Question. Keep your answer concise, conversational, and format it nicely in markdown.\n\nContext:\n${contextText.substring(0, 3000)}\n\nUser Question:\n${msg}`;
             
             const res = await apiFetch("http://127.0.0.1:8000/generate", { 
@@ -352,7 +344,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error("API Error");
             const data = await res.json();
             
-            // Clear "Thinking..." and stream the real response!
             aiDiv.innerHTML = "";
             await streamText(aiDiv, data.response);
             
