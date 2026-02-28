@@ -294,9 +294,26 @@
             <div class="settings-body">
                 <div class="setting-group">
                     <label>AI System Prompt (Custom Instructions)</label>
+
+                    <select id="promptPresetSelect" class="fc-input" style="margin-bottom: 10px;">
+                        <option value="custom">✏ Custom</option>
+                        <option value="child">🧒 Explain Like I'm a Child</option>
+                        <option value="composition">🧩 Full Composition Breakdown</option>
+                        <option value="geo_stats">🌍 Geographic & Statistical Answer</option>
+                        <option value="news">📰 News & Current Affairs Mode</option>
+                        <option value="exam">📝 Exam-Oriented Answer</option>
+                        <option value="professor">🎓 Professor Mode (Detailed)</option>
+                        <option value="code">💻 Code Explainer</option>
+                        <option value="math">∑ Math Solver (Step-by-Step)</option>
+                        <option value="summary">📘 Summarizer</option>
+                        <option value="compare">⚖️ Compare & Contrast</option>
+                        <option value="creative">🎨 Creative Rewrite</option>
+                    </select>
+
+                    <!-- EXISTING TEXTAREA -->
                     <textarea id="settingPrompt" rows="3"
                         placeholder="E.g., You are an expert tutor. Summarize clearly..."></textarea>
-                    <!-- Moved inline style to .setting-hint class -->
+
                     <small class="setting-hint">This tells the AI how to act. It gets sent with every request.</small>
                 </div>
 

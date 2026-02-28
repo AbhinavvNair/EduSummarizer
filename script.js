@@ -6,14 +6,68 @@ document.addEventListener('DOMContentLoaded', () => {
     const $ = id => document.getElementById(id);
     const toast = $('toast'), userInput = $('userInput'), aiOutput = $('aiOutput');
     const showToast = msg => { toast.innerText = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2000); };
-
-    // FIX 1: Single API base URL constant
     const API_BASE = "http://127.0.0.1:8000";
 
     let currentRawResponse = "", historyNotes = [], historyDisplayCount = 10, savedNotesData = [], lastGeneratedNoteId = null;
-    let savedPrompt = localStorage.getItem('appPrompt') || 'You are an expert AI tutor. Summarize clearly using clean Markdown.';
     let isReg = false, isResizing = false;
 
+    // Predefined AI instruction templates
+    const promptPresets = {
+        custom: "",
+
+        child: "Explain this as if I am 10 years old. Use simple words, friendly tone, short sentences, and include small examples.",
+
+        composition: "Break this topic into its complete structure and composition. List all components, subparts, relationships, and how they work together.",
+
+        geo_stats: "Answer from a geographic and statistical perspective. Include data, metrics, region-wise comparisons, and relevant real-world stats.",
+
+        news: "Answer like an unbiased news analyst. Provide recent developments, timelines, causes, impacts, and multiple viewpoints.",
+
+        exam: "Give a crisp, exam-oriented answer. Use definitions, bullet points, formulas, and important facts without fluff.",
+
+        professor: "Explain rigorously with academic depth. Include theory, formal definitions, detailed examples, and logical reasoning.",
+
+        code: "Explain the code step-by-step. Fix errors, provide corrected versions, discuss logic, and mention time complexity.",
+
+        math: "Solve with a detailed step-by-step explanation. Show formulas, derivations, intermediate steps, and simplified final answers.",
+
+        summary: "Summarize the content into clear, concise bullet points with maximum clarity and minimal words.",
+
+        compare: "Compare the items side-by-side using bullet points or tables. Highlight similarities, differences, pros/cons, and key takeaways.",
+
+        creative: "Rewrite the content creatively. Use metaphors, analogies, and mental models to make it intuitive while preserving meaning."
+    };
+    const presetSelect = document.getElementById("promptPresetSelect");
+    const promptTextarea = document.getElementById("settingPrompt");
+
+    // Load saved preset on startup
+    const savedPreset = localStorage.getItem("ai_preset") || "summary";
+    presetSelect.value = savedPreset;
+    if (savedPreset === "custom") {
+        promptTextarea.value = localStorage.getItem("ai_custom_prompt") || "";
+    } else {
+        promptTextarea.value = promptPresets[savedPreset];
+    }
+
+    // Auto-apply preset when changed
+    presetSelect.addEventListener("change", () => {
+        const preset = presetSelect.value;
+
+        localStorage.setItem("ai_preset", preset);
+
+        if (preset === "custom") {
+            // load last custom prompt or keep existing text
+            const lastCustom = localStorage.getItem("ai_custom_prompt") || "";
+            promptTextarea.value = lastCustom;
+        } else {
+            promptTextarea.value = promptPresets[preset];
+        }
+    });
+    promptTextarea.addEventListener("input", () => {
+        if (presetSelect.value === "custom") {
+            localStorage.setItem("ai_custom_prompt", promptTextarea.value);
+        }
+    });
     // --- API & AUTH ---
     const forceLogout = (msg = "Session expired. Please login again.") => {
         localStorage.removeItem("access_token"); sessionStorage.removeItem("access_token");
@@ -171,10 +225,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const showLoginError = msg => { $('loginError').textContent = msg; $('loginError').classList.remove('hidden'); };
 
-    $('settingsBtn')?.addEventListener('click', () => { $('settingPrompt').value = savedPrompt; $('settingsModal').classList.remove('hidden'); setTimeout(() => $('settingsModal').classList.add('show'), 10); });
+    $('settingsBtn')?.addEventListener('click', () => { $('settingsModal').classList.remove('hidden'); setTimeout(() => $('settingsModal').classList.add('show'), 10); });
     $('closeSettingsBtn')?.addEventListener('click', () => { $('settingsModal').classList.remove('show'); setTimeout(() => $('settingsModal').classList.add('hidden'), 200); });
-    $('saveSettingsBtn')?.addEventListener('click', () => { localStorage.setItem('appPrompt', $('settingPrompt').value.trim()); savedPrompt = localStorage.getItem('appPrompt'); showToast("Preferences Saved!"); $('closeSettingsBtn').click(); });
+    $('saveSettingsBtn')?.addEventListener('click', () => {
+        const preset = presetSelect.value;
 
+        if (preset === "custom") {
+            localStorage.setItem("ai_custom_prompt", promptTextarea.value.trim());
+        }
+
+        showToast("Preferences Saved!");
+        $('closeSettingsBtn').click();
+    });
     // FIX 2: Added "Content-Type": "application/json" header which was missing from this POST call
     $('changePasswordBtn')?.addEventListener('click', async () => {
         const old_p = $('currentPassword').value.trim(), new_p = $('newPassword').value.trim(), conf_p = $('confirmNewPassword').value.trim();
