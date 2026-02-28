@@ -191,3 +191,10 @@ pre code { display: block; padding: 20px; overflow-x: auto; font-family: 'Fira C
 .chat-input-area input:focus { border-color: var(--primary); }
 .chat-input-area button { background: var(--primary); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, box-shadow 0.2s; }
 .chat-input-area button:hover { transform: scale(1.05); box-shadow: 0 0 10px var(--orb-glow); }
+
+/* --- FULL FOCUS MODE --- */
+.workspace.focus-active { position: relative; background: var(--bg-app); }
+.workspace.focus-active::before { content: ''; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 40; }
+.output-panel.focus-mode { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 85vh; z-index: 50; border: 1px solid var(--primary); box-shadow: 0 0 60px rgba(129, 140, 248, 0.2); border-radius: 16px; }
+#exitFocusBtn { position: fixed; bottom: 30px; right: 30px; background: rgba(0,0,0,0.7); color: white; border: 1px solid var(--border); padding: 10px 20px; border-radius: 30px; cursor: pointer; backdrop-filter: blur(5px); z-index: 60; display: none; font-family: inherit; font-size: 0.9rem; }
+#exitFocusBtn.show { display: block; animation: fadeInUp 0.3s; }

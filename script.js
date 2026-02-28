@@ -235,6 +235,19 @@ document.addEventListener('DOMContentLoaded', () => {
     $('stopAudioBtn')?.addEventListener('click', () => { speechSynthesis.cancel(); $('playAudioBtn').innerHTML = '<i class="fa-solid fa-play"></i>'; });
     $('speedBtn')?.addEventListener('click', () => { speechParams.index = (speechParams.index + 1) % speechParams.speeds.length; $('speedBtn').innerText = speechParams.speeds[speechParams.index] + 'x'; });
 
+    $('focusBtn')?.addEventListener('click', () => { $('inputPanel').classList.add('hidden'); $('resizeHandler').classList.add('hidden'); $('outputPanel').classList.add('focus-mode'); $('workspace').classList.add('focus-active'); $('exitFocusBtn').classList.remove('hidden'); $('exitFocusBtn').classList.add('show'); });
+    const exitFocus = () => { $('inputPanel').classList.remove('hidden'); $('resizeHandler').classList.remove('hidden'); $('outputPanel').classList.remove('focus-mode'); $('workspace').classList.remove('focus-active'); $('exitFocusBtn').classList.remove('show'); $('exitFocusBtn').classList.add('hidden'); };
+    $('exitFocusBtn')?.addEventListener('click', exitFocus);
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        exitFocus();
+        if (!$('settingsModal').classList.contains('hidden')) $('closeSettingsBtn').click();
+        if (!$('cmdPalette').classList.contains('hidden')) { $('cmdPalette').classList.remove('show'); setTimeout(() => $('cmdPalette').classList.add('hidden'), 200); }
+        if (chatSidebar.classList.contains('open')) toggleChat();
+        if ($('confirmOverlay').classList.contains('show')) { $('confirmOverlay').classList.remove('show'); }
+        const lightbox = document.getElementById('imageLightbox');
+        if (lightbox) lightbox.remove();
+    });
     let audioCtx, noiseSrc;
     $('focusSoundBtn')?.addEventListener('click', () => {
         if (noiseSrc) { noiseSrc.stop(); noiseSrc = null; $('focusSoundBtn').classList.remove('active'); showToast("Focus: OFF"); return; }
