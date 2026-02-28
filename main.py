@@ -58,7 +58,7 @@ app.add_middleware(
 # Generate Request Schema
 class GenerateRequest(BaseModel):
     prompt: str
-    max_tokens: int = 1000
+    max_tokens: int = 4000
     temperature: float = 0.7
 
 

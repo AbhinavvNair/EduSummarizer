@@ -521,7 +521,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await apiFetch(`${API_BASE}/generate`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ prompt })
+                    body: JSON.stringify({
+                        prompt, max_tokens: fcConfig.count <= 10 ? 2000 : fcConfig.count <= 20 ? 4000 : 6000
+                    })
                 });
                 if (!res.ok) throw new Error("Backend error");
                 const data = await res.json();

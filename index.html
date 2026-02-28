@@ -4,24 +4,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="EduSummarizer — AI-powered study workspace for notes, summaries and flashcards.">
     <title>EduSummarizer | AI Workspace</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
 
+    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <!-- Third-party scripts — all deferred so they don't block page render -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" defer></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 
+    <!-- ==================== LOGIN SCREEN ==================== -->
     <div id="loginScreen" class="login-container">
         <div class="ambient-blob blob-purple"></div>
         <div class="ambient-blob blob-blue"></div>
@@ -50,16 +56,13 @@
                 <input type="password" id="confirmPass" placeholder="Confirm Password">
             </div>
 
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;">
-                <label style="font-size:0.85rem; color:#94A3B8;">
-                    <input type="checkbox" id="rememberMe" style="margin-right:6px;">
+            <!-- Moved inline styles to CSS classes: .login-footer-row, .toggle-auth-btn -->
+            <div class="login-footer-row">
+                <label class="remember-label">
+                    <input type="checkbox" id="rememberMe" class="remember-checkbox">
                     Remember Me
                 </label>
-
-                <button id="toggleAuthMode"
-                    style="background:none; border:none; color:#818CF8; cursor:pointer; font-size:0.85rem;">
-                    Create Account
-                </button>
+                <button id="toggleAuthMode" class="toggle-auth-btn">Create Account</button>
             </div>
 
             <button id="loginSubmitBtn" class="login-btn fluid-gradient">
@@ -70,6 +73,7 @@
         </div>
     </div>
 
+    <!-- ==================== MAIN APP ==================== -->
     <div class="app-container hidden" id="appContainer">
 
         <aside class="sidebar" id="sidebar">
@@ -97,7 +101,8 @@
                     <div id="savedList" class="nav-list" style="display: none;"></div>
                 </div>
 
-                <button class="nav-btn clear-history-btn" id="clearHistoryBtn" style="margin-top: 8px;">
+                <!-- Moved inline margin-top to CSS .clear-history-btn rule -->
+                <button class="nav-btn clear-history-btn" id="clearHistoryBtn">
                     <i class="fa-solid fa-trash-can"></i> Clear History
                 </button>
             </nav>
@@ -175,19 +180,17 @@
                     <div class="panel-head">
                         <div class="head-left">
                             <span class="panel-title"><i class="fa-regular fa-keyboard"></i> Input</span>
-                            <button id="micBtn" class="mic-btn" title="Voice Dictation">
-                                <i class="fa-solid fa-microphone"></i>
-                            </button>
                         </div>
+                        <!-- Converted onclick="setTemplate(...)" to data-action so they're ready
+                             to be wired up in JS without calling an undefined function -->
                         <div class="template-bar">
-                            <button class="chip" onclick="setTemplate('general')">General</button>
+                            <button class="chip" data-action="general">General</button>
                             <button class="chip" id="flashcardChip">Flashcard</button>
-                            <button class="chip" onclick="setTemplate('code')">Code</button>
-                            <button class="chip" onclick="setTemplate('math')">Math</button>
+                            <button class="chip" data-action="code">Code</button>
+                            <button class="chip" data-action="math">Math</button>
                         </div>
                     </div>
-                    <textarea id="userInput"
-                        placeholder="Paste your educational content here for Grok to refine..."></textarea>
+                    <textarea id="userInput" placeholder="Paste your educational content here to refine..."></textarea>
                     <div class="panel-footer" id="inputFooter">
                         <span class="status-indicator" id="inputStats">0 words</span>
                     </div>
@@ -199,9 +202,6 @@
                     <div class="panel-head">
                         <span class="panel-title"><i class="fa-solid fa-robot"></i> AI Summary</span>
                         <div class="panel-actions">
-                            <button class="icon-btn" id="visualizeBtn" title="Create Diagram">
-                                <i class="fa-solid fa-diagram-project"></i>
-                            </button>
                             <button class="icon-btn" id="saveNoteBtn" title="Save to Notebook">
                                 <i class="fa-regular fa-bookmark"></i>
                             </button>
@@ -259,6 +259,7 @@
         </main>
     </div>
 
+    <!-- ==================== CMD PALETTE ==================== -->
     <div id="cmdPalette" class="palette-overlay hidden">
         <div class="palette-modal">
             <div class="palette-search">
@@ -274,8 +275,10 @@
         </div>
     </div>
 
+    <!-- ==================== SETTINGS MODAL ==================== -->
+    <!-- Moved inline width/padding to .settings-card rule in CSS -->
     <div id="settingsModal" class="palette-overlay hidden">
-        <div class="palette-modal settings-card glass-panel" style="width: 500px; padding: 0;">
+        <div class="palette-modal settings-card glass-panel">
             <div class="settings-header">
                 <h2><i class="fa-solid fa-sliders"></i> App Preferences</h2>
                 <button id="closeSettingsBtn" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
@@ -286,17 +289,18 @@
                     <label>AI System Prompt (Custom Instructions)</label>
                     <textarea id="settingPrompt" rows="3"
                         placeholder="E.g., You are an expert tutor. Summarize clearly..."></textarea>
-                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 5px;">
-                        This tells the AI how to act. It gets sent with every request.
-                    </small>
+                    <!-- Moved inline style to .setting-hint class -->
+                    <small class="setting-hint">This tells the AI how to act. It gets sent with every request.</small>
                 </div>
 
-                <div class="setting-group" style="margin-top:25px;">
+                <!-- Moved inline margin-top to .setting-group-spaced class -->
+                <div class="setting-group setting-group-spaced">
                     <label>Change Password</label>
                     <input type="password" id="currentPassword" placeholder="Current Password">
                     <input type="password" id="newPassword" placeholder="New Password">
                     <input type="password" id="confirmNewPassword" placeholder="Confirm New Password">
-                    <button id="changePasswordBtn" class="login-btn fluid-gradient" style="margin-top:15px;">
+                    <!-- Moved inline margin-top to .setting-submit-btn class -->
+                    <button id="changePasswordBtn" class="login-btn fluid-gradient setting-submit-btn">
                         Update Password
                     </button>
                 </div>
@@ -304,18 +308,7 @@
         </div>
     </div>
 
-    <div id="confirmOverlay" class="confirm-overlay">
-        <div class="confirm-modal glass-panel">
-            <h3>Delete Note?</h3>
-            <p>This action cannot be undone.</p>
-            <div class="confirm-actions">
-                <button id="cancelDeleteBtn" class="action-btn secondary">Cancel</button>
-                <button id="confirmDeleteBtn" class="action-btn danger">Delete</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- FLASHCARD CONFIG MODAL -->
+    <!-- ==================== FLASHCARD CONFIG MODAL ==================== -->
     <div id="fcOverlay" class="fc-overlay hidden">
         <div class="fc-modal" id="fcModal">
 
@@ -385,7 +378,7 @@
         </div>
     </div>
 
-    <!-- FLASHCARD REVIEW SCREEN -->
+    <!-- ==================== FLASHCARD REVIEW SCREEN ==================== -->
     <div id="fcReviewScreen" class="fc-fullscreen hidden">
         <div class="fc-review-wrap">
             <div class="fc-review-header">
@@ -402,7 +395,7 @@
         </div>
     </div>
 
-    <!-- FLASHCARD MODE -->
+    <!-- ==================== FLASHCARD MODE ==================== -->
     <div id="fcModeScreen" class="fc-fullscreen hidden">
         <div class="fc-topbar">
             <div class="fc-topbar-left">
@@ -414,6 +407,7 @@
             </div>
             <button class="fc-btn fc-btn-ghost fc-btn-sm" id="fcExitBtn">Exit</button>
         </div>
+
         <!-- Desktop two-pane -->
         <div class="fc-panes" id="fcPanes">
             <div class="fc-left">
@@ -459,12 +453,14 @@
                 </div>
             </div>
         </div>
+
         <!-- Mobile single-pane -->
+        <!-- Moved padding inline styles to CSS classes .fc-mobile-answer-text, .fc-mobile-rating-wrap -->
         <div class="fc-mobile" id="fcMobile">
             <div class="fc-mobile-card" id="fcMobileCard"></div>
             <button class="fc-show-btn" id="fcMobileShowBtn">Show Answer</button>
-            <div id="fcMobileAnswer" class="hidden fc-answer-text" style="text-align:center;padding:0 20px;"></div>
-            <div class="fc-rating-btns" id="fcMobileRating" style="padding:0 20px;display:none;">
+            <div id="fcMobileAnswer" class="hidden fc-answer-text fc-mobile-answer-text"></div>
+            <div class="fc-rating-btns fc-mobile-rating-wrap" id="fcMobileRating" style="display:none;">
                 <button class="fc-rating-btn fc-got" data-rating="got">✓ Got it</button>
                 <button class="fc-rating-btn fc-almost" data-rating="almost">~ Almost</button>
                 <button class="fc-rating-btn fc-missed" data-rating="missed">✗ Missed</button>
@@ -476,7 +472,7 @@
         </div>
     </div>
 
-    <!-- SESSION SUMMARY -->
+    <!-- ==================== SESSION SUMMARY ==================== -->
     <div id="fcSummaryScreen" class="fc-fullscreen hidden">
         <div class="fc-summary-wrap">
             <div>
@@ -484,12 +480,18 @@
                 <div class="fc-summary-sub" id="fcSummarySub"></div>
             </div>
             <div class="fc-summary-stats">
-                <div class="fc-stat-card fc-stat-got"><span class="fc-stat-num" id="fcGotNum">0</span><span
-                        class="fc-stat-label">Got It</span></div>
-                <div class="fc-stat-card fc-stat-almost"><span class="fc-stat-num" id="fcAlmostNum">0</span><span
-                        class="fc-stat-label">Almost</span></div>
-                <div class="fc-stat-card fc-stat-missed"><span class="fc-stat-num" id="fcMissedNum">0</span><span
-                        class="fc-stat-label">Missed</span></div>
+                <div class="fc-stat-card fc-stat-got">
+                    <span class="fc-stat-num" id="fcGotNum">0</span>
+                    <span class="fc-stat-label">Got It</span>
+                </div>
+                <div class="fc-stat-card fc-stat-almost">
+                    <span class="fc-stat-num" id="fcAlmostNum">0</span>
+                    <span class="fc-stat-label">Almost</span>
+                </div>
+                <div class="fc-stat-card fc-stat-missed">
+                    <span class="fc-stat-num" id="fcMissedNum">0</span>
+                    <span class="fc-stat-label">Missed</span>
+                </div>
             </div>
             <div class="fc-summary-actions">
                 <button class="fc-btn fc-btn-primary hidden" id="fcReviewMissedBtn">Review Missed Cards</button>
@@ -499,15 +501,16 @@
         </div>
     </div>
 
-    <!-- EXIT WARNING MODAL -->
+    <!-- ==================== EXIT WARNING MODAL ==================== -->
+    <!-- Moved inline text-align/padding styles to .fc-exit-header and .fc-exit-footer classes -->
     <div id="fcExitOverlay" class="fc-overlay hidden">
-        <div class="fc-modal" style="max-width:360px;">
-            <div class="fc-modal-header" style="text-align:center;">
-                <div style="font-size:2rem;margin-bottom:8px;">⚠️</div>
+        <div class="fc-modal fc-exit-modal">
+            <div class="fc-modal-header fc-exit-header">
+                <div class="fc-exit-icon">⚠️</div>
                 <div class="fc-modal-title">Exit Flashcard Mode?</div>
                 <div class="fc-modal-sub">You'll lose your current progress and remaining cards.</div>
             </div>
-            <div class="fc-modal-footer" style="justify-content:center;padding-top:20px;">
+            <div class="fc-modal-footer fc-exit-footer">
                 <button class="fc-btn fc-btn-ghost" id="fcExitCancelBtn">Cancel</button>
                 <button class="fc-btn fc-btn-danger" id="fcExitConfirmBtn">Continue & Exit</button>
             </div>
