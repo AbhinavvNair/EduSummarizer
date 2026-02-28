@@ -1,6 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 
+from aiohttp import payload
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -57,9 +58,11 @@ app.add_middleware(
 
 # Generate Request Schema
 class GenerateRequest(BaseModel):
+    system_prompt: str | None = None
     prompt: str
     max_tokens: int = 4000
     temperature: float = 0.7
+
 
 class FlashcardDeckCreate(BaseModel):
     topic: str
@@ -152,7 +155,8 @@ def change_password(
     current_user: models.User = Depends(get_current_user),
 ):
     if not verify_password(payload.old_password, current_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Old password is incorrect")
+        raise HTTPException(
+            status_code=400, detail="Old password is incorrect")
 
     current_user.hashed_password = hash_password(payload.new_password)
 
@@ -204,7 +208,6 @@ def get_notes(
     return notes
 
 
-
 # Delete Note
 @app.delete("/notes/{note_id}")
 def delete_note(
@@ -230,6 +233,8 @@ def delete_note(
     return {"message": "Note deleted successfully"}
 
 # Toggle Bookmark
+
+
 @app.patch("/notes/{note_id}/bookmark")
 def toggle_bookmark(
     note_id: int,
@@ -263,9 +268,15 @@ async def generate_text(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    # DEBUG PRINT — this will confirm presets are changing
+    print("\n===== SYSTEM PROMPT (FRONTEND) =====")
+    print(request.system_prompt)
+    print("====================================\n")
+
     client = model_context.get("client")
     if not client:
-        raise HTTPException(status_code=503, detail="AI Client not initialized.")
+        raise HTTPException(
+            status_code=503, detail="AI Client not initialized.")
 
     try:
         completion = client.chat.completions.create(
@@ -273,7 +284,7 @@ async def generate_text(
             messages=[
                 {
                     "role": "system",
-                    "content": "You are NeuroNotes Pro. Summarize educational content with clean Markdown, bold key terms, and LaTeX ($$).",
+                    "content": request.system_prompt or "You are NeuroNotes Pro."
                 },
                 {"role": "user", "content": request.prompt},
             ],
@@ -300,11 +311,12 @@ async def generate_text(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Groq API Error: {str(e)}")
-
-# FLASHCARD DECKS CRUD
+        raise HTTPException(
+            status_code=500, detail=f"Groq API Error: {str(e)}")
 
 # Save a flashcard deck
+
+
 @app.post("/flashcards", response_model=FlashcardDeckResponse)
 def save_flashcard_deck(
     deck: FlashcardDeckCreate,
@@ -376,6 +388,7 @@ def delete_flashcard_deck(
     db.delete(deck)
     db.commit()
     return {"message": "Deck deleted"}
+
 
 # Static Files
 app.mount("/", StaticFiles(directory=".", html=True), name="static")

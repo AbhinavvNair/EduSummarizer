@@ -632,3 +632,29 @@ pre code { display: block; padding: 20px; overflow-x: auto; font-family: 'Fira C
     padding: 40px;
     font-size: 0.95rem;
 }
+.ai-mode-badge {
+    margin-left: 12px;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    border-radius: 8px;
+    background: var(--badge-bg, rgba(255,255,255,0.08));
+    color: var(--badge-fg, var(--primary));
+    border: 1px solid rgba(255,255,255,0.15);
+
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    opacity: 0.85;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.ai-mode-badge.show {
+    opacity: 1;
+    transform: translateY(0px);
+}
+
+.ai-mode-badge.hide {
+    opacity: 0;
+    transform: translateY(-2px);
+}

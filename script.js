@@ -11,6 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentRawResponse = "", historyNotes = [], historyDisplayCount = 10, savedNotesData = [], lastGeneratedNoteId = null;
     let isReg = false, isResizing = false;
 
+    // ======================================================
+    // PRESET SYSTEM + AI MODE BADGE (CLEAN + CORRECT ORDER)
+    // ======================================================
+
     // Predefined AI instruction templates
     const promptPresets = {
         custom: "",
@@ -37,35 +41,76 @@ document.addEventListener('DOMContentLoaded', () => {
 
         creative: "Rewrite the content creatively. Use metaphors, analogies, and mental models to make it intuitive while preserving meaning."
     };
+
+    // 🎨 Badge labels (emoji + name)
+    const presetLabels = {
+        custom: "Custom ✏",
+        child: "Explain Like I'm a Child 🧒",
+        composition: "Full Composition Breakdown 🧩",
+        geo_stats: "Geographic & Statistical 🌍",
+        news: "News & Current Affairs 📰",
+        exam: "Exam Mode 📝",
+        professor: "Professor Mode 🎓",
+        code: "Code Explainer 💻",
+        math: "Math Solver ∑",
+        summary: "Summary 📘",
+        compare: "Compare & Contrast ⚖️",
+        creative: "Creative Rewrite 🎨"
+    };
+
+    // 🔖 Badge element
+    const aiBadge = document.getElementById("aiModeBadge");
+
+    // 🔄 Badge update animation
+    function updateAIModeBadge(preset) {
+        if (!aiBadge) return;
+
+        aiBadge.classList.add("hide");
+
+        setTimeout(() => {
+            aiBadge.textContent = presetLabels[preset] || "Custom ✏";
+            aiBadge.classList.remove("hide");
+            aiBadge.classList.add("show");
+        }, 150);
+    }
+
+    // DOM elements
     const presetSelect = document.getElementById("promptPresetSelect");
     const promptTextarea = document.getElementById("settingPrompt");
 
     // Load saved preset on startup
     const savedPreset = localStorage.getItem("ai_preset") || "summary";
     presetSelect.value = savedPreset;
+
+    // Apply preset text
     if (savedPreset === "custom") {
         promptTextarea.value = localStorage.getItem("ai_custom_prompt") || "";
     } else {
         promptTextarea.value = promptPresets[savedPreset];
     }
 
-    // Auto-apply preset when changed
+    // Update badge immediately
+    updateAIModeBadge(savedPreset);
+
+    // Handle preset changes
     presetSelect.addEventListener("change", () => {
         const preset = presetSelect.value;
-
         localStorage.setItem("ai_preset", preset);
 
         if (preset === "custom") {
-            // load last custom prompt or keep existing text
             const lastCustom = localStorage.getItem("ai_custom_prompt") || "";
             promptTextarea.value = lastCustom;
         } else {
             promptTextarea.value = promptPresets[preset];
         }
+
+        updateAIModeBadge(preset);
     });
+
+    // Save custom prompt live
     promptTextarea.addEventListener("input", () => {
         if (presetSelect.value === "custom") {
-            localStorage.setItem("ai_custom_prompt", promptTextarea.value);
+            localStorage.setItem("ai_custom_prompt", promptTextarea.value.trim());
         }
     });
     // --- API & AUTH ---
@@ -83,6 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.status === 401) { forceLogout(); throw new Error("Unauthorized"); }
         return res;
     };
+
+
 
     const loadNotes = async () => {
         try {
@@ -103,6 +150,15 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast("Could not load notes. Check your connection.");
         }
     };
+
+    function updateUserUI(email) {
+        const nameEl = document.querySelector(".user-info .name");
+        const avEl = document.querySelector(".user-avatar");
+        if (!nameEl || !avEl) return;
+
+        nameEl.textContent = email.split("@")[0];
+        avEl.textContent = email.substring(0, 2).toUpperCase();
+    }
 
     const renderList = (container, notes, isSaved) => {
         container.innerHTML = "";
@@ -219,9 +275,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const fd = new URLSearchParams(); fd.append("username", email); fd.append("password", pass);
             const r = await fetch(`${API_BASE}/login`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: fd });
             if (!r.ok) throw new Error((await r.json()).detail || "Invalid credentials");
-            ($('rememberMe')?.checked ? localStorage : sessionStorage).setItem("access_token", (await r.json()).access_token);
-            $('loginScreen').style.display = 'none'; $('appContainer').classList.remove('hidden'); await loadNotes();
-        } catch (e) { showLoginError(e.message); }
+            const loginData = await r.json();
+            ($('rememberMe')?.checked ? localStorage : sessionStorage).setItem("access_token", loginData.access_token);
+
+            // Immediately update sidebar with current login user
+            updateUserUI(email);
+
+            $('loginScreen').style.display = 'none';
+            $('appContainer').classList.remove('hidden');
+
+            await loadNotes();
+        }
+        catch (e) { showLoginError(e.message); }
     });
     const showLoginError = msg => { $('loginError').textContent = msg; $('loginError').classList.remove('hidden'); };
 
@@ -320,7 +385,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = $('processBtn'); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Thinking...';
 
         try {
-            const res = await apiFetch(`${API_BASE}/generate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: text }) });
+            // 🔥 Dynamically compute system prompt at runtime
+            const activePreset = localStorage.getItem("ai_preset") || "summary";
+            let systemPromptText = "";
+
+            if (activePreset === "custom") {
+                systemPromptText = localStorage.getItem("ai_custom_prompt") || "";
+            } else {
+                systemPromptText = promptPresets[activePreset] || "";
+            }
+
+            const res = await apiFetch(`${API_BASE}/generate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    system_prompt: systemPromptText.trim(),
+                    prompt: text.trim()
+                })
+            });
             if (!res.ok) throw new Error("Backend Error");
             const data = await res.json();
 
@@ -509,9 +591,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (action === 'explain') systemPromptAddon = "Explain the following code or concept step-by-step so a beginner can understand.";
 
             try {
+                // Apply system prompt preset
+                const preset = localStorage.getItem("ai_preset") || "summary";
+                let systemPrompt = "";
+
+                if (preset === "custom") {
+                    systemPrompt = localStorage.getItem("ai_custom_prompt") || "";
+                } else {
+                    systemPrompt = promptPresets[preset] || "";
+                }
+
                 const res = await apiFetch(`${API_BASE}/generate`, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ prompt: `Instruction: ${systemPromptAddon}\n\nText:\n${selectedTextForMenu}` })
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        system_prompt: systemPrompt.trim(),
+                        prompt: text.trim()
+                    })
                 });
                 if (!res.ok) throw new Error("Backend Error");
                 const data = await res.json();
@@ -567,9 +663,24 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const chatPrompt = `You are a helpful study assistant. Use the provided Context to answer the User's Question. Keep your answer concise, conversational, and format it nicely in markdown.\n\nContext:\n${contextText.substring(0, 3000)}\n\nUser Question:\n${msg}`;
 
+            // --- Apply preset to chat ---
+            const activePreset = localStorage.getItem("ai_preset") || "summary";
+            let systemPromptText = "";
+
+            if (activePreset === "custom") {
+                systemPromptText = localStorage.getItem("ai_custom_prompt") || "";
+            } else {
+                systemPromptText = promptPresets[activePreset] || "";
+            }
+
             const res = await apiFetch(`${API_BASE}/generate`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt: chatPrompt, temperature: 0.3 })
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    system_prompt: systemPromptText.trim(),
+                    prompt: chatPrompt.trim(),
+                    temperature: 0.3
+                })
             });
 
             if (!res.ok) throw new Error("API Error");
