@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const $ = id => document.getElementById(id);
     const toast = $('toast'), userInput = $('userInput'), aiOutput = $('aiOutput');
     const showToast = msg => { toast.innerText = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2000); };
-    
+
     let currentRawResponse = "", historyNotes = [], historyDisplayCount = 10, savedNotesData = [], lastGeneratedNoteId = null;
     let savedPrompt = localStorage.getItem('appPrompt') || 'You are an expert AI tutor. Summarize clearly using clean Markdown.';
     let isReg = false, isResizing = false;
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
             historyNotes = notes.filter(n => !n.is_bookmarked); savedNotesData = notes.filter(n => n.is_bookmarked);
             renderList($('historyList'), historyNotes.slice(0, historyDisplayCount), false);
             renderList($('savedList'), savedNotesData, true);
-            if(historyNotes.length > historyDisplayCount) {
+            if (historyNotes.length > historyDisplayCount) {
                 const btn = document.createElement('div'); btn.className = "list-item"; btn.style = "text-align:center; font-weight:600; color:var(--primary);";
                 btn.textContent = "Show More"; btn.onclick = () => { historyDisplayCount += 10; loadNotes(); };
                 $('historyList').appendChild(btn);
@@ -75,6 +75,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     $('logoutBtn')?.addEventListener('click', () => forceLogout("Logged out"));
+    const userSection = $('userSection');
+    $('userToggleBtn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        userSection?.classList.toggle('open');
+    });
+    document.addEventListener('click', () => userSection?.classList.remove('open'));
 
     $('loginSubmitBtn')?.addEventListener('click', async () => {
         const email = $('loginUser').value.trim(), pass = $('loginPass').value.trim(), conf = $('confirmPass')?.value.trim();
@@ -82,12 +88,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isReg && pass !== conf) return showLoginError("Passwords do not match");
         try {
             if (isReg) {
-                const r = await fetch("http://127.0.0.1:8000/register", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({email, password: pass}) });
+                const r = await fetch("http://127.0.0.1:8000/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password: pass }) });
                 if (!r.ok) throw new Error((await r.json()).detail || "Registration failed");
                 showToast("Account created. Please login."); $('toggleAuthMode').click(); return;
             }
             const fd = new URLSearchParams(); fd.append("username", email); fd.append("password", pass);
-            const r = await fetch("http://127.0.0.1:8000/login", { method: "POST", headers: {"Content-Type":"application/x-www-form-urlencoded"}, body: fd });
+            const r = await fetch("http://127.0.0.1:8000/login", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: fd });
             if (!r.ok) throw new Error((await r.json()).detail || "Invalid credentials");
             ($('rememberMe')?.checked ? localStorage : sessionStorage).setItem("access_token", (await r.json()).access_token);
             $('loginScreen').style.display = 'none'; $('appContainer').classList.remove('hidden'); await loadNotes();
@@ -95,15 +101,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const showLoginError = msg => { $('loginError').textContent = msg; $('loginError').classList.remove('hidden'); };
 
-    $('settingsBtn')?.addEventListener('click', () => { $('settingPrompt').value = savedPrompt; $('settingsModal').classList.remove('hidden'); setTimeout(()=>$('settingsModal').classList.add('show'), 10); });
-    $('closeSettingsBtn')?.addEventListener('click', () => { $('settingsModal').classList.remove('show'); setTimeout(()=>$('settingsModal').classList.add('hidden'), 200); });
+    $('settingsBtn')?.addEventListener('click', () => { $('settingPrompt').value = savedPrompt; $('settingsModal').classList.remove('hidden'); setTimeout(() => $('settingsModal').classList.add('show'), 10); });
+    $('closeSettingsBtn')?.addEventListener('click', () => { $('settingsModal').classList.remove('show'); setTimeout(() => $('settingsModal').classList.add('hidden'), 200); });
     $('saveSettingsBtn')?.addEventListener('click', () => { localStorage.setItem('appPrompt', $('settingPrompt').value.trim()); savedPrompt = localStorage.getItem('appPrompt'); showToast("Preferences Saved!"); $('closeSettingsBtn').click(); });
 
     $('changePasswordBtn')?.addEventListener('click', async () => {
         const old_p = $('currentPassword').value.trim(), new_p = $('newPassword').value.trim(), conf_p = $('confirmNewPassword').value.trim();
         if (!old_p || !new_p) return showToast("Fill all fields"); if (new_p !== conf_p) return showToast("Passwords don't match");
         try {
-            const r = await apiFetch("http://127.0.0.1:8000/change-password", { method: "POST", body: JSON.stringify({old_password: old_p, new_password: new_p}) });
+            const r = await apiFetch("http://127.0.0.1:8000/change-password", { method: "POST", body: JSON.stringify({ old_password: old_p, new_password: new_p }) });
             if (!r.ok) throw new Error("Incorrect current password");
             showToast("Password updated"); $('currentPassword').value = $('newPassword').value = $('confirmNewPassword').value = "";
         } catch (e) { showToast(e.message); }
@@ -128,11 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const handleBookmark = async (id, isRemoving = false) => {
-        if(!id) return showToast("No note selected");
-        try { const r = await apiFetch(`http://127.0.0.1:8000/notes/${id}/bookmark`, { method: "PATCH" }); if(!r.ok) throw new Error(); await loadNotes(); showToast(isRemoving ? "Removed bookmark" : "Saved note"); } catch { showToast("Bookmark failed"); }
+        if (!id) return showToast("No note selected");
+        try { const r = await apiFetch(`http://127.0.0.1:8000/notes/${id}/bookmark`, { method: "PATCH" }); if (!r.ok) throw new Error(); await loadNotes(); showToast(isRemoving ? "Removed bookmark" : "Saved note"); } catch { showToast("Bookmark failed"); }
     };
     $('saveNoteBtn')?.addEventListener('click', () => handleBookmark(lastGeneratedNoteId));
-    
+
     const showDeleteModal = async (id) => { if (confirm("Delete this note?")) { try { await apiFetch(`http://127.0.0.1:8000/notes/${id}`, { method: "DELETE" }); await loadNotes(); showToast("Note deleted"); } catch { showToast("Delete failed"); } } };
 
     // ==========================================
@@ -144,19 +150,19 @@ document.addEventListener('DOMContentLoaded', () => {
         let i = 0, buffer = '';
         return new Promise(resolve => {
             const timer = setInterval(() => {
-                buffer += rawText.substring(i, i + 3); 
+                buffer += rawText.substring(i, i + 3);
                 i += 3;
                 container.innerHTML = marked.parse(buffer);
-                container.scrollTop = container.scrollHeight; 
-                
+                container.scrollTop = container.scrollHeight;
+
                 if (i >= rawText.length) {
-                    clearInterval(timer); 
-                    container.innerHTML = marked.parse(rawText); 
+                    clearInterval(timer);
+                    container.innerHTML = marked.parse(rawText);
                     container.classList.remove('typing-cursor');
-                    if(onFinish) onFinish(); 
+                    if (onFinish) onFinish();
                     resolve();
                 }
-            }, 10); 
+            }, 10);
         });
     };
 
@@ -164,25 +170,25 @@ document.addEventListener('DOMContentLoaded', () => {
     $('processBtn')?.addEventListener('click', async () => {
         const text = userInput.value.trim(); if (!text) return showToast("Enter notes first");
         const btn = $('processBtn'); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Thinking...';
-        
+
         try {
-            const res = await apiFetch("http://127.0.0.1:8000/generate", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({prompt: text}) });
+            const res = await apiFetch("http://127.0.0.1:8000/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: text }) });
             if (!res.ok) throw new Error("Backend Error");
             const data = await res.json();
-            
+
             currentRawResponse = data.response; lastGeneratedNoteId = data.note_id;
-            
+
             await streamText(aiOutput, data.response, () => {
                 if (window.renderMathInElement) renderMathInElement(aiOutput, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }] });
                 enableLiveCode();
             });
-            
+
             await loadNotes(); showToast("Complete");
         } catch (e) { showToast(e.message); } finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Refine'; }
     });
 
     $('newNoteBtn')?.addEventListener('click', () => { userInput.value = ''; aiOutput.innerHTML = '<i class="fa-solid fa-layer-group"></i><p>Ready</p>'; aiOutput.classList.add('empty-state'); currentRawResponse = ""; lastGeneratedNoteId = null; });
-    userInput.addEventListener('input', e => $('inputStats').innerText = e.target.value.trim().split(/\s+/).filter(x=>x).length + ' words');
+    userInput.addEventListener('input', e => $('inputStats').innerText = e.target.value.trim().split(/\s+/).filter(x => x).length + ' words');
 
     // --- INSTA-CODE & SNAPSHOT ---
     function enableLiveCode() {
@@ -201,22 +207,22 @@ document.addEventListener('DOMContentLoaded', () => {
             head.appendChild(actions); pre.insertBefore(head, block);
         });
     }
-    const executeCode = (block, pre) => { pre.nextElementSibling?.classList.contains('code-output') && pre.nextElementSibling.remove(); const out = document.createElement('div'); out.className = 'code-output show'; try { const logs = []; const oLog = console.log; console.log = (...a) => logs.push(a.join(' ')); eval(block.innerText); out.innerText = logs.length ? logs.join('\n') : "> Executed"; out.style.color = "#10b981"; console.log = oLog; } catch(e) { out.innerText = "Error: " + e.message; out.style.color = "#ef4444"; } pre.after(out); };
+    const executeCode = (block, pre) => { pre.nextElementSibling?.classList.contains('code-output') && pre.nextElementSibling.remove(); const out = document.createElement('div'); out.className = 'code-output show'; try { const logs = []; const oLog = console.log; console.log = (...a) => logs.push(a.join(' ')); eval(block.innerText); out.innerText = logs.length ? logs.join('\n') : "> Executed"; out.style.color = "#10b981"; console.log = oLog; } catch (e) { out.innerText = "Error: " + e.message; out.style.color = "#ef4444"; } pre.after(out); };
 
     // --- AUDIO, NOISE & GOD MODE ---
     let speechParams = { speeds: [1, 1.5, 2], index: 0, utterance: null };
     const populateVoices = () => {
-        const v = window.speechSynthesis.getVoices(); if(!v.length) return setTimeout(populateVoices, 200); if(!$('voiceSelect')) return; $('voiceSelect').innerHTML = '';
-        v.slice(0, 10).forEach(voice => { const opt = document.createElement('option'); opt.value = voice.name; opt.textContent = voice.name.substring(0,25); $('voiceSelect').appendChild(opt); });
+        const v = window.speechSynthesis.getVoices(); if (!v.length) return setTimeout(populateVoices, 200); if (!$('voiceSelect')) return; $('voiceSelect').innerHTML = '';
+        v.slice(0, 10).forEach(voice => { const opt = document.createElement('option'); opt.value = voice.name; opt.textContent = voice.name.substring(0, 25); $('voiceSelect').appendChild(opt); });
     };
     populateVoices(); window.speechSynthesis.onvoiceschanged = populateVoices;
 
     $('playAudioBtn')?.addEventListener('click', () => {
-        if(speechSynthesis.paused) { speechSynthesis.resume(); $('playAudioBtn').innerHTML = '<i class="fa-solid fa-pause"></i>'; return; }
-        if(speechSynthesis.speaking) { speechSynthesis.pause(); $('playAudioBtn').innerHTML = '<i class="fa-solid fa-play"></i>'; return; }
-        const t = window.getSelection().toString() || aiOutput.innerText || userInput.value; if(!t || t.includes("Ready")) return;
+        if (speechSynthesis.paused) { speechSynthesis.resume(); $('playAudioBtn').innerHTML = '<i class="fa-solid fa-pause"></i>'; return; }
+        if (speechSynthesis.speaking) { speechSynthesis.pause(); $('playAudioBtn').innerHTML = '<i class="fa-solid fa-play"></i>'; return; }
+        const t = window.getSelection().toString() || aiOutput.innerText || userInput.value; if (!t || t.includes("Ready")) return;
         speechSynthesis.cancel(); speechParams.utterance = new SpeechSynthesisUtterance(t);
-        const selVoice = window.speechSynthesis.getVoices().find(v => v.name === $('voiceSelect').value); if(selVoice) speechParams.utterance.voice = selVoice;
+        const selVoice = window.speechSynthesis.getVoices().find(v => v.name === $('voiceSelect').value); if (selVoice) speechParams.utterance.voice = selVoice;
         speechParams.utterance.rate = speechParams.speeds[speechParams.index];
         speechParams.utterance.onend = () => $('playAudioBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
         speechSynthesis.speak(speechParams.utterance); $('playAudioBtn').innerHTML = '<i class="fa-solid fa-pause"></i>';
@@ -226,20 +232,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let audioCtx, noiseSrc;
     $('focusSoundBtn')?.addEventListener('click', () => {
-        if(noiseSrc) { noiseSrc.stop(); noiseSrc = null; $('focusSoundBtn').classList.remove('active'); showToast("Focus: OFF"); return; }
-        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate*2, audioCtx.sampleRate), data = buf.getChannelData(0); let last = 0;
-        for(let i=0; i<buf.length; i++) { const w = Math.random()*2-1; last = (last + (0.02 * w)) / 1.02; data[i] = last * 3.5; }
+        if (noiseSrc) { noiseSrc.stop(); noiseSrc = null; $('focusSoundBtn').classList.remove('active'); showToast("Focus: OFF"); return; }
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate), data = buf.getChannelData(0); let last = 0;
+        for (let i = 0; i < buf.length; i++) { const w = Math.random() * 2 - 1; last = (last + (0.02 * w)) / 1.02; data[i] = last * 3.5; }
         noiseSrc = audioCtx.createBufferSource(); noiseSrc.buffer = buf; noiseSrc.loop = true;
         const gain = audioCtx.createGain(); gain.gain.value = 0.05; noiseSrc.connect(gain); gain.connect(audioCtx.destination);
         noiseSrc.start(); $('focusSoundBtn').classList.add('active'); showToast("Focus: ON");
     });
 
-    $('pdfBtn')?.addEventListener('click', () => { if(!aiOutput.innerText) return; showToast("Generating PDF..."); html2pdf().from(aiOutput).save('note.pdf'); });
+    $('pdfBtn')?.addEventListener('click', () => { if (!aiOutput.innerText) return; showToast("Generating PDF..."); html2pdf().from(aiOutput).save('note.pdf'); });
 
     // IDE Splitter
     $('resizeHandler')?.addEventListener('mousedown', () => { isResizing = true; document.body.classList.add('resizing'); $('resizeHandler').classList.add('active'); });
-    document.addEventListener('mousemove', e => { if(!isResizing) return; const r = $('workspace').getBoundingClientRect(); let w = ((e.clientX - r.left)/r.width)*100; $('inputPanel').style.flex = `0 0 calc(${Math.max(20, Math.min(w, 80))}% - 8px)`; });
+    document.addEventListener('mousemove', e => { if (!isResizing) return; const r = $('workspace').getBoundingClientRect(); let w = ((e.clientX - r.left) / r.width) * 100; $('inputPanel').style.flex = `0 0 calc(${Math.max(20, Math.min(w, 80))}% - 8px)`; });
     document.addEventListener('mouseup', () => { isResizing = false; document.body.classList.remove('resizing'); $('resizeHandler')?.classList.remove('active'); });
 
     // --- FLOATING HIGHLIGHT MENU ---
@@ -261,38 +267,38 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.float-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.preventDefault(); const action = btn.dataset.action; hideFloatingMenu();
-            
+
             if (action === 'read') {
                 speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(selectedTextForMenu);
-                const selVoice = window.speechSynthesis.getVoices().find(v => v.name === $('voiceSelect').value); if(selVoice) utterance.voice = selVoice;
+                const selVoice = window.speechSynthesis.getVoices().find(v => v.name === $('voiceSelect').value); if (selVoice) utterance.voice = selVoice;
                 speechSynthesis.speak(utterance); return;
             }
 
             const processBtnOrig = $('processBtn').innerHTML;
             $('processBtn').disabled = true; $('processBtn').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
-            
+
             let systemPromptAddon = "";
             if (action === 'rewrite') systemPromptAddon = "Rewrite the following text to be more clear, professional, and engaging. Return ONLY the rewritten text.";
             if (action === 'summarize') systemPromptAddon = "Summarize the following text concisely in bullet points.";
             if (action === 'explain') systemPromptAddon = "Explain the following code or concept step-by-step so a beginner can understand.";
 
             try {
-                const res = await apiFetch("http://127.0.0.1:8000/generate", { 
-                    method: "POST", headers: {"Content-Type":"application/json"}, 
-                    body: JSON.stringify({ prompt: `Instruction: ${systemPromptAddon}\n\nText:\n${selectedTextForMenu}` }) 
+                const res = await apiFetch("http://127.0.0.1:8000/generate", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt: `Instruction: ${systemPromptAddon}\n\nText:\n${selectedTextForMenu}` })
                 });
                 if (!res.ok) throw new Error("Backend Error");
                 const data = await res.json();
-                
+
                 currentRawResponse = data.response; lastGeneratedNoteId = data.note_id;
-                
+
                 await streamText(aiOutput, data.response, () => {
                     if (window.renderMathInElement) renderMathInElement(aiOutput, { delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }] });
                     enableLiveCode();
                 });
-                
+
                 await loadNotes(); showToast(action.charAt(0).toUpperCase() + action.slice(1) + " Complete!");
-            } catch (err) { showToast(err.message); } 
+            } catch (err) { showToast(err.message); }
             finally { $('processBtn').disabled = false; $('processBtn').innerHTML = processBtnOrig; }
         });
     });
@@ -301,30 +307,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // 14. CONTEXTUAL AI CHAT SIDEBAR
     // ==========================================
     const chatSidebar = $('chatSidebar'), chatInput = $('chatInput'), chatMessages = $('chatMessages');
-    
+
     // Toggle Sidebar & Shrink Workspace
-    const toggleChat = () => { 
-        chatSidebar.classList.toggle('open'); 
+    const toggleChat = () => {
+        chatSidebar.classList.toggle('open');
         $('workspace').classList.toggle('chat-open'); // <-- NEW LINE ADDED HERE
-        if(chatSidebar.classList.contains('open')) chatInput.focus(); 
+        if (chatSidebar.classList.contains('open')) chatInput.focus();
     };
     $('chatToggleBtn')?.addEventListener('click', toggleChat);
     $('closeChatBtn')?.addEventListener('click', toggleChat);
 
     const appendMsg = (text, sender) => {
         const div = document.createElement('div'); div.className = `chat-msg ${sender}`;
-        div.innerHTML = sender === 'ai' ? marked.parse(text) : text; 
+        div.innerHTML = sender === 'ai' ? marked.parse(text) : text;
         chatMessages.appendChild(div); chatMessages.scrollTop = chatMessages.scrollHeight;
-        return div; 
+        return div;
     };
 
     const handleChatSend = async () => {
-        const msg = chatInput.value.trim(); if(!msg) return;
+        const msg = chatInput.value.trim(); if (!msg) return;
         appendMsg(msg, 'user'); chatInput.value = '';
-        
+
         const contextText = aiOutput.innerText.includes('Ready for refinement') ? userInput.value : aiOutput.innerText;
-        
-        if(!contextText.trim() || contextText.includes('Ready for refinement')) {
+
+        if (!contextText.trim() || contextText.includes('Ready for refinement')) {
             setTimeout(() => appendMsg("Please paste some text or generate a note first so I know what we are talking about!", 'ai'), 400);
             return;
         }
@@ -335,24 +341,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const chatPrompt = `You are a helpful study assistant. Use the provided Context to answer the User's Question. Keep your answer concise, conversational, and format it nicely in markdown.\n\nContext:\n${contextText.substring(0, 3000)}\n\nUser Question:\n${msg}`;
-            
-            const res = await apiFetch("http://127.0.0.1:8000/generate", { 
-                method: "POST", headers: {"Content-Type":"application/json"}, 
-                body: JSON.stringify({ prompt: chatPrompt, temperature: 0.3 }) 
+
+            const res = await apiFetch("http://127.0.0.1:8000/generate", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt: chatPrompt, temperature: 0.3 })
             });
-            
+
             if (!res.ok) throw new Error("API Error");
             const data = await res.json();
-            
+
             aiDiv.innerHTML = "";
             await streamText(aiDiv, data.response);
-            
+
         } catch (err) {
-            aiDiv.innerHTML = "Error: " + err.message; 
+            aiDiv.innerHTML = "Error: " + err.message;
             aiDiv.classList.remove('typing-cursor');
         }
     };
 
     $('sendChatBtn')?.addEventListener('click', handleChatSend);
-    chatInput?.addEventListener('keydown', (e) => { if(e.key === 'Enter') handleChatSend(); });
+    chatInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleChatSend(); });
 });

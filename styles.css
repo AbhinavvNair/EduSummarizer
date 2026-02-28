@@ -44,9 +44,23 @@ body { font-family: 'Outfit', sans-serif; height: 100vh; background: var(--bg-ap
 .list-item:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
 .hover-action, .delete-btn { opacity: 0; transform: scale(0.9); transition: all 0.2s ease; } .list-item:hover .hover-action, .list-item:hover .delete-btn { opacity: 1; transform: scale(1); }
 .sidebar-bottom { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); }
+
+.user-section { position: relative; }
+
 .user-card { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; background: rgba(0,0,0,0.2); }
-.user-avatar { width: 36px; height: 36px; background: var(--primary); color: white; border-radius: 50%; display: grid; place-items: center; font-weight: 600; }
-.user-info { display: flex; flex-direction: column; } .user-info .name { font-size: 0.9rem; font-weight: 600; } .user-info .role { font-size: 0.75rem; color: var(--text-muted); }
+.user-card.user-toggle { width: 100%; border: none; cursor: pointer; color: var(--text-main); font-family: inherit; transition: background 0.2s; }
+.user-card.user-toggle:hover { background: rgba(255,255,255,0.07); }
+
+.user-avatar { width: 36px; height: 36px; background: var(--primary); color: white; border-radius: 50%; display: grid; place-items: center; font-weight: 600; flex-shrink: 0; }
+.user-info { display: flex; flex-direction: column; flex: 1; text-align: left; }
+.user-info .name { font-size: 0.9rem; font-weight: 600; }
+.user-info .role { font-size: 0.75rem; color: var(--text-muted); }
+
+.user-chevron { font-size: 0.75rem; color: var(--text-muted); transition: transform 0.25s; }
+.user-section.open .user-chevron { transform: rotate(180deg); }
+
+.dropup-menu { position: absolute; bottom: calc(100% + 6px); left: 0; right: 0; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 -8px 24px rgba(0,0,0,0.4); opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity 0.2s, transform 0.2s; }
+.user-section.open .dropup-menu { opacity: 1; transform: translateY(0); pointer-events: all; }
 
 /* --- MAIN WORKSPACE --- */
 .main-content { flex: 1; display: flex; flex-direction: column; position: relative; }

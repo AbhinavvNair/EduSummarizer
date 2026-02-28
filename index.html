@@ -69,9 +69,9 @@
             <p id="loginError" class="login-msg hidden">Invalid Credentials</p>
         </div>
     </div>
-    
+
     <div class="app-container hidden" id="appContainer">
-        
+
         <aside class="sidebar" id="sidebar">
             <div class="logo-section">
                 <i class="fa-solid fa-brain logo-icon"></i>
@@ -97,32 +97,35 @@
                     <div id="savedList" class="nav-list" style="display: none;"></div>
                 </div>
 
-                <button class="nav-btn" id="settingsBtn" style="margin-top: auto;">
-                    <i class="fa-solid fa-gear"></i> Settings
-                </button>
-
-                <button class="nav-btn clear-history-btn" id="clearHistoryBtn">
+                <button class="nav-btn clear-history-btn" id="clearHistoryBtn" style="margin-top: 8px;">
                     <i class="fa-solid fa-trash-can"></i> Clear History
                 </button>
             </nav>
 
             <div class="sidebar-bottom">
-                <div class="user-card">
-                    <div class="user-avatar">YS</div>
-                    <div class="user-info">
-                        <span class="name">Logged In</span>
-                        <span class="role">User</span>
+                <div class="user-section" id="userSection">
+                    <div class="dropup-menu" id="dropupMenu">
+                        <button class="nav-btn" id="settingsBtn">
+                            <i class="fa-solid fa-gear"></i> Settings
+                        </button>
+                        <button class="nav-btn logout-btn" id="logoutBtn">
+                            <i class="fa-solid fa-right-from-bracket"></i> Logout
+                        </button>
                     </div>
+                    <button class="user-card user-toggle" id="userToggleBtn">
+                        <div class="user-avatar">YS</div>
+                        <div class="user-info">
+                            <span class="name">Logged In</span>
+                            <span class="role">User</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-up user-chevron" id="userChevron"></i>
+                    </button>
                 </div>
-
-                <button class="nav-btn logout-btn" id="logoutBtn" style="margin-top: 10px;">
-                    <i class="fa-solid fa-right-from-bracket"></i> Logout
-                </button>
             </div>
         </aside>
 
         <main class="main-content" id="mainContent">
-            
+
             <header class="top-header" id="topHeader">
                 <div class="header-titles">
                     <h1>Workspace</h1>
@@ -136,8 +139,10 @@
                         <div class="theme-menu">
                             <button class="theme-option" data-idx="0"><i class="fa-solid fa-moon"></i> Nebula</button>
                             <button class="theme-option" data-idx="1"><i class="fa-solid fa-sun"></i> Daylight</button>
-                            <button class="theme-option" data-idx="2"><i class="fa-solid fa-battery-quarter"></i> Midnight</button>
-                            <button class="theme-option" data-idx="3"><i class="fa-solid fa-terminal"></i> Hacker</button>
+                            <button class="theme-option" data-idx="2"><i class="fa-solid fa-battery-quarter"></i>
+                                Midnight</button>
+                            <button class="theme-option" data-idx="3"><i class="fa-solid fa-terminal"></i>
+                                Hacker</button>
                             <button class="theme-option" data-idx="4"><i class="fa-solid fa-fire"></i> Sunset</button>
                         </div>
                     </div>
@@ -165,7 +170,7 @@
             </header>
 
             <div class="workspace" id="workspace">
-                
+
                 <div class="panel input-panel" id="inputPanel">
                     <div class="panel-head">
                         <div class="head-left">
@@ -181,7 +186,8 @@
                             <button class="chip" onclick="setTemplate('math')">Math</button>
                         </div>
                     </div>
-                    <textarea id="userInput" placeholder="Paste your educational content here for Grok to refine..."></textarea>
+                    <textarea id="userInput"
+                        placeholder="Paste your educational content here for Grok to refine..."></textarea>
                     <div class="panel-footer" id="inputFooter">
                         <span class="status-indicator" id="inputStats">0 words</span>
                     </div>
@@ -218,7 +224,8 @@
                         <div class="audio-controls">
                             <select id="voiceSelect" class="voice-select"></select>
                             <button class="audio-btn" id="stopAudioBtn"><i class="fa-solid fa-stop"></i></button>
-                            <button class="audio-btn main-play" id="playAudioBtn"><i class="fa-solid fa-play"></i></button>
+                            <button class="audio-btn main-play" id="playAudioBtn"><i
+                                    class="fa-solid fa-play"></i></button>
                             <button class="audio-btn speed" id="speedBtn">1x</button>
                         </div>
                     </div>
@@ -226,7 +233,8 @@
             </div>
 
             <div id="floatingMenu" class="floating-menu hidden">
-                <button class="float-btn" data-action="rewrite"><i class="fa-solid fa-wand-magic-sparkles"></i> Rewrite</button>
+                <button class="float-btn" data-action="rewrite"><i class="fa-solid fa-wand-magic-sparkles"></i>
+                    Rewrite</button>
                 <button class="float-btn" data-action="summarize"><i class="fa-solid fa-list"></i> Summarize</button>
                 <button class="float-btn" data-action="explain"><i class="fa-solid fa-code"></i> Explain</button>
                 <button class="float-btn" data-action="read"><i class="fa-solid fa-volume-high"></i> Read</button>
@@ -247,7 +255,7 @@
                     <button id="sendChatBtn"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
-            
+
         </main>
     </div>
 
@@ -276,7 +284,8 @@
             <div class="settings-body">
                 <div class="setting-group">
                     <label>AI System Prompt (Custom Instructions)</label>
-                    <textarea id="settingPrompt" rows="3" placeholder="E.g., You are an expert tutor. Summarize clearly..."></textarea>
+                    <textarea id="settingPrompt" rows="3"
+                        placeholder="E.g., You are an expert tutor. Summarize clearly..."></textarea>
                     <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 5px;">
                         This tells the AI how to act. It gets sent with every request.
                     </small>
@@ -294,7 +303,7 @@
             </div>
         </div>
     </div>
-    
+
     <div id="confirmOverlay" class="confirm-overlay">
         <div class="confirm-modal glass-panel">
             <h3>Delete Note?</h3>
@@ -309,4 +318,5 @@
     <div id="toast" class="toast">Action Complete</div>
     <script src="script.js"></script>
 </body>
+
 </html>
