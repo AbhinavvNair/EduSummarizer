@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const toast = $('toast'), userInput = $('userInput'), aiOutput = $('aiOutput');
     const showToast = msg => { toast.innerText = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2000); };
 
+    // FIX 1: Single API base URL constant
+    const API_BASE = "http://127.0.0.1:8000";
+
     let currentRawResponse = "", historyNotes = [], historyDisplayCount = 10, savedNotesData = [], lastGeneratedNoteId = null;
     let savedPrompt = localStorage.getItem('appPrompt') || 'You are an expert AI tutor. Summarize clearly using clean Markdown.';
     let isReg = false, isResizing = false;
@@ -29,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadNotes = async () => {
         try {
-            const res = await apiFetch("http://127.0.0.1:8000/notes");
+            const res = await apiFetch(`${API_BASE}/notes`);
             if (!res.ok) throw new Error("Fetch failed");
             const notes = await res.json();
             historyNotes = notes.filter(n => !n.is_bookmarked); savedNotesData = notes.filter(n => n.is_bookmarked);
@@ -40,7 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.textContent = "Show More"; btn.onclick = () => { historyDisplayCount += 10; loadNotes(); };
                 $('historyList').appendChild(btn);
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            // FIX 10: Show toast on notes load failure instead of silent console.error
+            console.error(e);
+            showToast("Could not load notes. Check your connection.");
+        }
     };
 
     const renderList = (container, notes, isSaved) => {
@@ -59,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     (async function validateSession() {
         if (!(localStorage.getItem("access_token") || sessionStorage.getItem("access_token"))) return forceLogout("Please login to continue");
         try {
-            const res = await apiFetch("http://127.0.0.1:8000/me"); if (!res.ok) throw new Error();
+            const res = await apiFetch(`${API_BASE}/me`); if (!res.ok) throw new Error();
             const email = (await res.json()).email;
             const nameEl = document.querySelector(".user-info .name"), avEl = document.querySelector(".user-avatar");
             if (nameEl) nameEl.textContent = email.split("@")[0]; if (avEl) avEl.textContent = email.substring(0, 2).toUpperCase();
@@ -88,12 +95,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isReg && pass !== conf) return showLoginError("Passwords do not match");
         try {
             if (isReg) {
-                const r = await fetch("http://127.0.0.1:8000/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password: pass }) });
+                const r = await fetch(`${API_BASE}/register`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password: pass }) });
                 if (!r.ok) throw new Error((await r.json()).detail || "Registration failed");
                 showToast("Account created. Please login."); $('toggleAuthMode').click(); return;
             }
             const fd = new URLSearchParams(); fd.append("username", email); fd.append("password", pass);
-            const r = await fetch("http://127.0.0.1:8000/login", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: fd });
+            const r = await fetch(`${API_BASE}/login`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: fd });
             if (!r.ok) throw new Error((await r.json()).detail || "Invalid credentials");
             ($('rememberMe')?.checked ? localStorage : sessionStorage).setItem("access_token", (await r.json()).access_token);
             $('loginScreen').style.display = 'none'; $('appContainer').classList.remove('hidden'); await loadNotes();
@@ -105,11 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
     $('closeSettingsBtn')?.addEventListener('click', () => { $('settingsModal').classList.remove('show'); setTimeout(() => $('settingsModal').classList.add('hidden'), 200); });
     $('saveSettingsBtn')?.addEventListener('click', () => { localStorage.setItem('appPrompt', $('settingPrompt').value.trim()); savedPrompt = localStorage.getItem('appPrompt'); showToast("Preferences Saved!"); $('closeSettingsBtn').click(); });
 
+    // FIX 2: Added "Content-Type": "application/json" header which was missing from this POST call
     $('changePasswordBtn')?.addEventListener('click', async () => {
         const old_p = $('currentPassword').value.trim(), new_p = $('newPassword').value.trim(), conf_p = $('confirmNewPassword').value.trim();
         if (!old_p || !new_p) return showToast("Fill all fields"); if (new_p !== conf_p) return showToast("Passwords don't match");
         try {
-            const r = await apiFetch("http://127.0.0.1:8000/change-password", { method: "POST", body: JSON.stringify({ old_password: old_p, new_password: new_p }) });
+            const r = await apiFetch(`${API_BASE}/change-password`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ old_password: old_p, new_password: new_p }) });
             if (!r.ok) throw new Error("Incorrect current password");
             showToast("Password updated"); $('currentPassword').value = $('newPassword').value = $('confirmNewPassword').value = "";
         } catch (e) { showToast(e.message); }
@@ -128,14 +136,18 @@ document.addEventListener('DOMContentLoaded', () => {
     $('historyToggle')?.addEventListener('click', () => toggleList('historyList', 'historyToggle'));
     $('savedToggle')?.addEventListener('click', () => toggleList('savedList', 'savedToggle'));
 
+    // FIX 8: Use Promise.all to delete notes in parallel instead of sequential await in a loop
     $('clearHistoryBtn')?.addEventListener("click", async () => {
         if (!confirm("Clear all history?")) return;
-        try { for (const n of historyNotes) await apiFetch(`http://127.0.0.1:8000/notes/${n.id}`, { method: "DELETE" }); await loadNotes(); showToast("History cleared"); } catch { showToast("Error clearing history"); }
+        try {
+            await Promise.all(historyNotes.map(n => apiFetch(`${API_BASE}/notes/${n.id}`, { method: "DELETE" })));
+            await loadNotes(); showToast("History cleared");
+        } catch { showToast("Error clearing history"); }
     });
 
     const handleBookmark = async (id, isRemoving = false) => {
         if (!id) return showToast("No note selected");
-        try { const r = await apiFetch(`http://127.0.0.1:8000/notes/${id}/bookmark`, { method: "PATCH" }); if (!r.ok) throw new Error(); await loadNotes(); showToast(isRemoving ? "Removed bookmark" : "Saved note"); } catch { showToast("Bookmark failed"); }
+        try { const r = await apiFetch(`${API_BASE}/notes/${id}/bookmark`, { method: "PATCH" }); if (!r.ok) throw new Error(); await loadNotes(); showToast(isRemoving ? "Removed bookmark" : "Saved note"); } catch { showToast("Bookmark failed"); }
     };
     $('saveNoteBtn')?.addEventListener('click', () => handleBookmark(lastGeneratedNoteId));
     $('copyBtn')?.addEventListener('click', () => {
@@ -144,10 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast("Copied!");
     });
 
-    const showDeleteModal = async (id) => { if (confirm("Delete this note?")) { try { await apiFetch(`http://127.0.0.1:8000/notes/${id}`, { method: "DELETE" }); await loadNotes(); showToast("Note deleted"); } catch { showToast("Delete failed"); } } };
+    const showDeleteModal = async (id) => { if (confirm("Delete this note?")) { try { await apiFetch(`${API_BASE}/notes/${id}`, { method: "DELETE" }); await loadNotes(); showToast("Note deleted"); } catch { showToast("Delete failed"); } } };
 
     // ==========================================
     // TYPEWRITER STREAMING ENGINE
+    // FIX 5: Increased chunk size to 8 chars and interval to 16ms (one frame)
+    //         to reduce how often marked.parse is called during streaming
     // ==========================================
     const streamText = async (container, rawText, onFinish) => {
         container.classList.remove('empty-state');
@@ -155,8 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let i = 0, buffer = '';
         return new Promise(resolve => {
             const timer = setInterval(() => {
-                buffer += rawText.substring(i, i + 3);
-                i += 3;
+                buffer += rawText.substring(i, i + 8);
+                i += 8;
                 container.innerHTML = marked.parse(buffer);
                 container.scrollTop = container.scrollHeight;
 
@@ -167,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (onFinish) onFinish();
                     resolve();
                 }
-            }, 10);
+            }, 16);
         });
     };
 
@@ -177,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = $('processBtn'); btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Thinking...';
 
         try {
-            const res = await apiFetch("http://127.0.0.1:8000/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: text }) });
+            const res = await apiFetch(`${API_BASE}/generate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: text }) });
             if (!res.ok) throw new Error("Backend Error");
             const data = await res.json();
 
@@ -193,7 +207,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     $('newNoteBtn')?.addEventListener('click', () => { userInput.value = ''; aiOutput.innerHTML = '<i class="fa-solid fa-layer-group"></i><p>Ready</p>'; aiOutput.classList.add('empty-state'); currentRawResponse = ""; lastGeneratedNoteId = null; });
-    userInput.addEventListener('input', e => $('inputStats').innerText = e.target.value.trim().split(/\s+/).filter(x => x).length + ' words');
+
+    // FIX 9: Added value check before split to avoid returning 1 for empty string
+    userInput.addEventListener('input', e => {
+        const val = e.target.value.trim();
+        $('inputStats').innerText = (val === '' ? 0 : val.split(/\s+/).filter(x => x).length) + ' words';
+    });
 
     // --- INSTA-CODE & SNAPSHOT ---
     function enableLiveCode() {
@@ -212,7 +231,33 @@ document.addEventListener('DOMContentLoaded', () => {
             head.appendChild(actions); pre.insertBefore(head, block);
         });
     }
-    const executeCode = (block, pre) => { pre.nextElementSibling?.classList.contains('code-output') && pre.nextElementSibling.remove(); const out = document.createElement('div'); out.className = 'code-output show'; try { const logs = []; const oLog = console.log; console.log = (...a) => logs.push(a.join(' ')); eval(block.innerText); out.innerText = logs.length ? logs.join('\n') : "> Executed"; out.style.color = "#10b981"; console.log = oLog; } catch (e) { out.innerText = "Error: " + e.message; out.style.color = "#ef4444"; } pre.after(out); };
+
+    // FIX 3: Wrap eval in an iframe sandbox to prevent scope pollution.
+    //         console.log is now safely captured and always restored even on error.
+    const executeCode = (block, pre) => {
+        pre.nextElementSibling?.classList.contains('code-output') && pre.nextElementSibling.remove();
+        const out = document.createElement('div'); out.className = 'code-output show';
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        try {
+            const logs = [];
+            iframe.contentWindow.console = {
+                log: (...a) => logs.push(a.map(x => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ')),
+                error: (...a) => logs.push('Error: ' + a.join(' ')),
+                warn: (...a) => logs.push('Warn: ' + a.join(' ')),
+            };
+            iframe.contentWindow.eval(block.innerText);
+            out.innerText = logs.length ? logs.join('\n') : "> Executed";
+            out.style.color = "#10b981";
+        } catch (e) {
+            out.innerText = "Error: " + e.message;
+            out.style.color = "#ef4444";
+        } finally {
+            document.body.removeChild(iframe);
+        }
+        pre.after(out);
+    };
 
     // --- AUDIO, NOISE & GOD MODE ---
     let speechParams = { speeds: [1, 1.5, 2], index: 0, utterance: null };
@@ -301,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (action === 'explain') systemPromptAddon = "Explain the following code or concept step-by-step so a beginner can understand.";
 
             try {
-                const res = await apiFetch("http://127.0.0.1:8000/generate", {
+                const res = await apiFetch(`${API_BASE}/generate`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ prompt: `Instruction: ${systemPromptAddon}\n\nText:\n${selectedTextForMenu}` })
                 });
@@ -322,14 +367,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // 14. CONTEXTUAL AI CHAT SIDEBAR
+    // CONTEXTUAL AI CHAT SIDEBAR
     // ==========================================
     const chatSidebar = $('chatSidebar'), chatInput = $('chatInput'), chatMessages = $('chatMessages');
 
-    // Toggle Sidebar & Shrink Workspace
     const toggleChat = () => {
         chatSidebar.classList.toggle('open');
-        $('workspace').classList.toggle('chat-open'); // <-- NEW LINE ADDED HERE
+        $('workspace').classList.toggle('chat-open');
         if (chatSidebar.classList.contains('open')) chatInput.focus();
     };
     $('chatToggleBtn')?.addEventListener('click', toggleChat);
@@ -360,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const chatPrompt = `You are a helpful study assistant. Use the provided Context to answer the User's Question. Keep your answer concise, conversational, and format it nicely in markdown.\n\nContext:\n${contextText.substring(0, 3000)}\n\nUser Question:\n${msg}`;
 
-            const res = await apiFetch("http://127.0.0.1:8000/generate", {
+            const res = await apiFetch(`${API_BASE}/generate`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ prompt: chatPrompt, temperature: 0.3 })
             });
@@ -379,4 +423,362 @@ document.addEventListener('DOMContentLoaded', () => {
 
     $('sendChatBtn')?.addEventListener('click', handleChatSend);
     chatInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleChatSend(); });
+
+    // ==========================================
+    // FLASHCARD FEATURE
+    // ==========================================
+    (function () {
+        // ── State
+        let fcConfig = { count: 10, topic: '', difficulty: 'Intermediate', cardType: 'Mixed' };
+        let fcCards = [], fcActiveCards = [], fcCardIdx = 0, fcRevealed = false, fcRatings = {};
+
+        // ── Element shortcuts
+        const el = id => document.getElementById(id);
+
+        // ── Show/hide steps inside config modal
+        function fcShowStep(step) {
+            ['fcStepConfig', 'fcStepLoading', 'fcStepError'].forEach(s => el(s).classList.add('hidden'));
+            el(step).classList.remove('hidden');
+        }
+
+        // ── Open config modal
+        el('flashcardChip').addEventListener('click', () => {
+            fcResetConfig();
+            el('fcOverlay').classList.remove('hidden');
+            fcShowStep('fcStepConfig');
+        });
+
+        function fcResetConfig() {
+            fcConfig = { count: 10, topic: '', difficulty: 'Intermediate', cardType: 'Mixed' };
+            el('fcTopic').value = '';
+            el('fcTopicError').classList.add('hidden');
+            el('fcTopic').classList.remove('fc-input-error');
+            document.querySelectorAll('.fc-preset-btn').forEach(b => b.classList.toggle('fc-selected', b.dataset.val === '10'));
+            document.querySelectorAll('#fcDiffRow .fc-pill-btn').forEach(b => b.classList.toggle('fc-pill-selected', b.dataset.val === 'Intermediate'));
+            document.querySelectorAll('#fcTypeRow .fc-pill-btn').forEach(b => b.classList.toggle('fc-pill-selected', b.dataset.val === 'Mixed'));
+        }
+
+        // Preset count buttons
+        document.querySelectorAll('.fc-preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.fc-preset-btn').forEach(b => b.classList.remove('fc-selected'));
+                btn.classList.add('fc-selected');
+                fcConfig.count = parseInt(btn.dataset.val);
+            });
+        });
+
+        // Difficulty pills
+        document.querySelectorAll('#fcDiffRow .fc-pill-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#fcDiffRow .fc-pill-btn').forEach(b => b.classList.remove('fc-pill-selected'));
+                btn.classList.add('fc-pill-selected');
+                fcConfig.difficulty = btn.dataset.val;
+            });
+        });
+
+        // Card type pills
+        document.querySelectorAll('#fcTypeRow .fc-pill-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#fcTypeRow .fc-pill-btn').forEach(b => b.classList.remove('fc-pill-selected'));
+                btn.classList.add('fc-pill-selected');
+                fcConfig.cardType = btn.dataset.val;
+            });
+        });
+
+        // Cancel modal
+        el('fcCancelBtn').addEventListener('click', () => el('fcOverlay').classList.add('hidden'));
+
+        // FIX 4 (preset bug): fcGenerate now reads count directly from the selected
+        // preset button at call time, so 20 and 30 always work correctly.
+        // fcRetryBtn now calls fcGenerate directly (no duplicate fcGenerateFromConfig needed).
+        el('fcGenerateBtn').addEventListener('click', fcGenerate);
+        el('fcTopic').addEventListener('keydown', e => { if (e.key === 'Enter') fcGenerate(); });
+        el('fcRetryBtn').addEventListener('click', fcGenerate);
+        el('fcBackBtn').addEventListener('click', () => fcShowStep('fcStepConfig'));
+
+        async function fcGenerate() {
+            // FIX 4: Read count from the visually selected button, not stale state
+            const selectedPreset = document.querySelector('.fc-preset-btn.fc-selected');
+            if (selectedPreset) fcConfig.count = parseInt(selectedPreset.dataset.val);
+
+            fcConfig.topic = el('fcTopic').value.trim();
+            if (!fcConfig.topic) {
+                el('fcTopicError').classList.remove('hidden');
+                el('fcTopic').classList.add('fc-input-error');
+                return;
+            }
+            el('fcTopicError').classList.add('hidden');
+            el('fcTopic').classList.remove('fc-input-error');
+
+            el('fcLoadCount').textContent = fcConfig.count;
+            el('fcLoadTopic').textContent = `"${fcConfig.topic}"`;
+            fcShowStep('fcStepLoading');
+
+            // FIX 4 (cont): Single prompt build — no duplication
+            const prompt = `Generate exactly ${fcConfig.count} flashcards about "${fcConfig.topic}". Difficulty: ${fcConfig.difficulty}. Type: ${fcConfig.cardType}. Respond with ONLY a valid JSON array. Each item must have: "question", "answer", "explanation", "hint". Keep questions concise. Answers 1-3 sentences. No markdown, no extra text.`;
+
+            try {
+                const res = await apiFetch(`${API_BASE}/generate`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt })
+                });
+                if (!res.ok) throw new Error("Backend error");
+                const data = await res.json();
+                const raw = data.response.replace(/```json|```/g, '').trim();
+                fcCards = JSON.parse(raw).map((c, i) => ({ ...c, id: i }));
+                el('fcOverlay').classList.add('hidden');
+                fcShowReview();
+            } catch (e) {
+                el('fcErrorMsg').textContent = "Generation failed. Please try again.";
+                fcShowStep('fcStepError');
+            }
+        }
+
+        // ── Review screen
+        function fcShowReview() {
+            el('fcReviewMeta').textContent = `${fcCards.length} cards · ${fcConfig.topic} · ${fcConfig.difficulty}`;
+            fcRenderCardList();
+            el('fcReviewScreen').classList.remove('hidden');
+        }
+
+        function fcRenderCardList() {
+            const list = el('fcCardList');
+            list.innerHTML = '';
+            fcCards.forEach((card, idx) => {
+                const row = document.createElement('div');
+                row.className = 'fc-card-row';
+                row.innerHTML = `
+                <span class="fc-card-num">#${idx + 1}</span>
+                <div class="fc-card-content">
+                    <div class="fc-card-question">${card.question}</div>
+                    <div class="fc-card-answer-preview">${card.answer}</div>
+                </div>
+                <button class="fc-edit-btn" data-idx="${idx}" title="Edit">✎</button>`;
+                list.appendChild(row);
+            });
+
+            list.querySelectorAll('.fc-edit-btn').forEach(btn => {
+                btn.addEventListener('click', () => fcOpenEdit(parseInt(btn.dataset.idx)));
+            });
+        }
+
+        function fcOpenEdit(idx) {
+            const list = el('fcCardList');
+            const rows = list.querySelectorAll('.fc-card-row');
+            const row = rows[idx];
+            row.classList.add('fc-editing');
+            row.innerHTML = `
+            <span class="fc-card-num">#${idx + 1}</span>
+            <div class="fc-card-content">
+                <div class="fc-edit-form">
+                    <textarea id="fcEditQ" rows="2">${fcCards[idx].question}</textarea>
+                    <textarea id="fcEditA" rows="2">${fcCards[idx].answer}</textarea>
+                    <div class="fc-edit-actions">
+                        <button class="fc-btn fc-btn-primary fc-btn-sm" id="fcSaveEdit">Save</button>
+                        <button class="fc-btn fc-btn-ghost fc-btn-sm" id="fcCancelEdit">Cancel</button>
+                    </div>
+                </div>
+            </div>`;
+            el('fcSaveEdit').addEventListener('click', () => {
+                fcCards[idx].question = el('fcEditQ').value.trim();
+                fcCards[idx].answer = el('fcEditA').value.trim();
+                fcRenderCardList();
+            });
+            el('fcCancelEdit').addEventListener('click', () => fcRenderCardList());
+        }
+
+        el('fcRegenBtn').addEventListener('click', () => {
+            el('fcReviewScreen').classList.add('hidden');
+            el('fcOverlay').classList.remove('hidden');
+            fcShowStep('fcStepLoading');
+            fcGenerate();
+        });
+
+        el('fcStartBtn').addEventListener('click', () => fcStartMode(fcCards));
+
+        // ── Flashcard mode
+        function fcStartMode(deck) {
+            fcActiveCards = deck;
+            fcCardIdx = 0;
+            fcRevealed = false;
+            fcRatings = {};
+            el('fcReviewScreen').classList.add('hidden');
+            el('fcSummaryScreen').classList.add('hidden');
+            el('fcModeScreen').classList.remove('hidden');
+            fcRenderCard();
+        }
+
+        function fcRenderCard() {
+            const card = fcActiveCards[fcCardIdx];
+            const total = fcActiveCards.length;
+
+            // topbar
+            el('fcTopicLabel').textContent = fcConfig.topic;
+            el('fcProgressText').textContent = `Card ${fcCardIdx + 1} of ${total}`;
+            el('fcProgressFill').style.width = `${((fcCardIdx + 1) / total) * 100}%`;
+
+            // desktop
+            el('fcCardQ').textContent = card.question;
+            el('fcPrevBtn').disabled = fcCardIdx === 0;
+            el('fcNextBtn').textContent = fcCardIdx === total - 1 ? 'Finish' : 'Next →';
+            el('fcShowBtn').classList.remove('hidden');
+            el('fcAnswerBlock').classList.add('hidden');
+            el('fcRightEmpty').classList.remove('hidden');
+
+            // clear ratings
+            document.querySelectorAll('#fcPanes .fc-rating-btn').forEach(b => b.classList.remove('fc-rated'));
+            if (fcRatings[fcCardIdx]) {
+                document.querySelectorAll('#fcPanes .fc-rating-btn').forEach(b => {
+                    if (b.dataset.rating === fcRatings[fcCardIdx]) b.classList.add('fc-rated');
+                });
+            }
+
+            // mobile
+            el('fcMobileCard').textContent = card.question;
+            el('fcMobileShowBtn').classList.remove('hidden');
+            el('fcMobileAnswer').classList.add('hidden');
+            el('fcMobileRating').style.display = 'none';
+            el('fcMobilePrev').disabled = fcCardIdx === 0;
+            el('fcMobileNext').textContent = fcCardIdx === total - 1 ? 'Finish' : 'Next →';
+        }
+
+        // Show answer (desktop)
+        el('fcShowBtn').addEventListener('click', () => {
+            fcRevealed = true;
+            const card = fcActiveCards[fcCardIdx];
+            el('fcShowBtn').classList.add('hidden');
+            el('fcRightEmpty').classList.add('hidden');
+            el('fcAnswerBlock').classList.remove('hidden');
+            el('fcAnswerText').textContent = card.answer;
+            el('fcExplText').textContent = card.explanation || '';
+            el('fcExplSection').style.display = card.explanation ? 'block' : 'none';
+            el('fcHintText').textContent = card.hint ? '💡 ' + card.hint : '';
+            el('fcHintSection').style.display = card.hint ? 'block' : 'none';
+        });
+
+        // Show answer (mobile)
+        el('fcMobileShowBtn').addEventListener('click', () => {
+            const card = fcActiveCards[fcCardIdx];
+            el('fcMobileShowBtn').classList.add('hidden');
+            el('fcMobileAnswer').textContent = card.answer;
+            el('fcMobileAnswer').classList.remove('hidden');
+            el('fcMobileRating').style.display = 'flex';
+        });
+
+        // Rating (desktop)
+        document.querySelectorAll('#fcPanes .fc-rating-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                fcRatings[fcCardIdx] = btn.dataset.rating;
+                document.querySelectorAll('#fcPanes .fc-rating-btn').forEach(b => b.classList.remove('fc-rated'));
+                btn.classList.add('fc-rated');
+            });
+        });
+
+        // Rating (mobile)
+        document.querySelectorAll('#fcMobileRating .fc-rating-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                fcRatings[fcCardIdx] = btn.dataset.rating;
+                document.querySelectorAll('#fcMobileRating .fc-rating-btn').forEach(b => b.classList.remove('fc-rated'));
+                btn.classList.add('fc-rated');
+            });
+        });
+
+        // Nav (desktop)
+        el('fcPrevBtn').addEventListener('click', () => { if (fcCardIdx > 0) { fcCardIdx--; fcRenderCard(); } });
+        el('fcNextBtn').addEventListener('click', fcNext);
+
+        // Nav (mobile)
+        el('fcMobilePrev').addEventListener('click', () => { if (fcCardIdx > 0) { fcCardIdx--; fcRenderCard(); } });
+        el('fcMobileNext').addEventListener('click', fcNext);
+
+        function fcNext() {
+            if (fcCardIdx < fcActiveCards.length - 1) {
+                fcCardIdx++;
+                fcRenderCard();
+            } else {
+                fcShowSummary();
+            }
+        }
+
+        // ── Exit handling
+        el('fcExitBtn').addEventListener('click', () => fcAskExit());
+
+        function fcAskExit() {
+            el('fcExitOverlay').classList.remove('hidden');
+        }
+
+        el('fcExitCancelBtn').addEventListener('click', () => el('fcExitOverlay').classList.add('hidden'));
+        el('fcExitConfirmBtn').addEventListener('click', () => {
+            el('fcExitOverlay').classList.add('hidden');
+            el('fcModeScreen').classList.add('hidden');
+            el('fcReviewScreen').classList.add('hidden');
+        });
+
+        // Intercept other chip buttons during flashcard mode
+        document.querySelectorAll('.chip').forEach(chip => {
+            if (chip.id === 'flashcardChip') return;
+            chip.addEventListener('click', () => {
+                if (!el('fcModeScreen').classList.contains('hidden') || !el('fcReviewScreen').classList.contains('hidden')) {
+                    fcAskExit();
+                }
+            });
+        });
+
+        // FIX 6: Re-added fcGuardedIds intercept that was removed in the last version,
+        // so header/sidebar buttons correctly trigger exit warning during a flashcard session
+        const fcGuardedIds = [
+            'newNoteBtn', 'historyToggle', 'savedToggle', 'clearHistoryBtn',
+            'logoutBtn', 'settingsBtn', 'chatToggleBtn', 'focusBtn',
+            'focusSoundBtn', 'pdfBtn', 'processBtn', 'userToggleBtn'
+        ];
+        fcGuardedIds.forEach(id => {
+            const btn = el(id);
+            if (!btn) return;
+            btn.addEventListener('click', (e) => {
+                const inSession = !el('fcModeScreen').classList.contains('hidden') ||
+                    !el('fcReviewScreen').classList.contains('hidden');
+                if (inSession) {
+                    e.stopImmediatePropagation();
+                    fcAskExit();
+                }
+            }, true);
+        });
+
+        // ── Summary
+        function fcShowSummary() {
+            el('fcModeScreen').classList.add('hidden');
+            const got = Object.values(fcRatings).filter(r => r === 'got').length;
+            const almost = Object.values(fcRatings).filter(r => r === 'almost').length;
+            const missed = Object.values(fcRatings).filter(r => r === 'missed').length;
+            el('fcGotNum').textContent = got;
+            el('fcAlmostNum').textContent = almost;
+            el('fcMissedNum').textContent = missed;
+            el('fcSummarySub').textContent = `${fcConfig.topic} · ${fcActiveCards.length} cards reviewed`;
+            const reviewMissedBtn = el('fcReviewMissedBtn');
+            if (missed > 0) {
+                reviewMissedBtn.classList.remove('hidden');
+                reviewMissedBtn.textContent = `Review ${missed} Missed Card${missed !== 1 ? 's' : ''}`;
+            } else {
+                reviewMissedBtn.classList.add('hidden');
+            }
+            el('fcSummaryScreen').classList.remove('hidden');
+        }
+
+        el('fcReviewMissedBtn').addEventListener('click', () => {
+            const missed = fcCards.filter((_, i) => fcRatings[i] === 'missed');
+            el('fcSummaryScreen').classList.add('hidden');
+            fcStartMode(missed);
+        });
+
+        el('fcRestartBtn').addEventListener('click', () => {
+            el('fcSummaryScreen').classList.add('hidden');
+            fcStartMode(fcCards);
+        });
+
+        el('fcSummaryExitBtn').addEventListener('click', () => {
+            el('fcSummaryScreen').classList.add('hidden');
+        });
+
+    })();
 });

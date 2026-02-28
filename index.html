@@ -181,7 +181,7 @@
                         </div>
                         <div class="template-bar">
                             <button class="chip" onclick="setTemplate('general')">General</button>
-                            <button class="chip" onclick="setTemplate('flashcard')">Flashcard</button>
+                            <button class="chip" id="flashcardChip">Flashcard</button>
                             <button class="chip" onclick="setTemplate('code')">Code</button>
                             <button class="chip" onclick="setTemplate('math')">Math</button>
                         </div>
@@ -311,6 +311,205 @@
             <div class="confirm-actions">
                 <button id="cancelDeleteBtn" class="action-btn secondary">Cancel</button>
                 <button id="confirmDeleteBtn" class="action-btn danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLASHCARD CONFIG MODAL -->
+    <div id="fcOverlay" class="fc-overlay hidden">
+        <div class="fc-modal" id="fcModal">
+
+            <!-- STEP: CONFIG -->
+            <div id="fcStepConfig">
+                <div class="fc-modal-header">
+                    <div class="fc-modal-title">Create Flashcards</div>
+                    <div class="fc-modal-sub">Configure your study session</div>
+                </div>
+                <div class="fc-modal-body">
+                    <div class="fc-form-group">
+                        <label class="fc-label">Number of Cards</label>
+                        <div class="fc-preset-row">
+                            <button class="fc-preset-btn fc-selected" data-val="10">10</button>
+                            <button class="fc-preset-btn" data-val="20">20</button>
+                            <button class="fc-preset-btn" data-val="30">30</button>
+                        </div>
+                    </div>
+                    <div class="fc-form-group">
+                        <label class="fc-label">Topic</label>
+                        <input class="fc-input" id="fcTopic" type="text"
+                            placeholder="e.g. Microeconomics, Roman History…" maxlength="100">
+                        <span class="fc-error hidden" id="fcTopicError">Topic is required</span>
+                    </div>
+                    <div class="fc-form-group">
+                        <label class="fc-label">Difficulty</label>
+                        <div class="fc-pill-row" id="fcDiffRow">
+                            <button class="fc-pill-btn" data-val="Beginner">Beginner</button>
+                            <button class="fc-pill-btn fc-pill-selected" data-val="Intermediate">Intermediate</button>
+                            <button class="fc-pill-btn" data-val="Advanced">Advanced</button>
+                        </div>
+                    </div>
+                    <div class="fc-form-group">
+                        <label class="fc-label">Card Type</label>
+                        <div class="fc-pill-row" id="fcTypeRow">
+                            <button class="fc-pill-btn" data-val="Q&A Definition">Q&A Definition</button>
+                            <button class="fc-pill-btn" data-val="Conceptual">Conceptual</button>
+                            <button class="fc-pill-btn fc-pill-selected" data-val="Mixed">Mixed</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="fc-modal-footer">
+                    <button class="fc-btn fc-btn-ghost" id="fcCancelBtn">Cancel</button>
+                    <button class="fc-btn fc-btn-primary" id="fcGenerateBtn">Generate →</button>
+                </div>
+            </div>
+
+            <!-- STEP: LOADING -->
+            <div id="fcStepLoading" class="hidden">
+                <div class="fc-loading-wrap">
+                    <div class="fc-spinner"></div>
+                    <div class="fc-loading-msg">Generating <strong id="fcLoadCount"></strong> flashcards on<br><strong
+                            id="fcLoadTopic"></strong>…</div>
+                </div>
+            </div>
+
+            <!-- STEP: ERROR -->
+            <div id="fcStepError" class="hidden">
+                <div class="fc-error-wrap">
+                    <div class="fc-error-icon">⚠</div>
+                    <div class="fc-error-msg" id="fcErrorMsg">Generation failed. Please try again.</div>
+                    <button class="fc-btn fc-btn-primary" id="fcRetryBtn">↻ Retry</button>
+                    <button class="fc-btn fc-btn-ghost fc-btn-sm" id="fcBackBtn">← Back</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- FLASHCARD REVIEW SCREEN -->
+    <div id="fcReviewScreen" class="fc-fullscreen hidden">
+        <div class="fc-review-wrap">
+            <div class="fc-review-header">
+                <div>
+                    <div class="fc-review-title">Review Your Flashcards</div>
+                    <div class="fc-review-meta" id="fcReviewMeta"></div>
+                </div>
+                <div class="fc-review-actions">
+                    <button class="fc-btn fc-btn-ghost" id="fcRegenBtn">↻ Regenerate All</button>
+                    <button class="fc-btn fc-btn-primary" id="fcStartBtn">Start Flashcards →</button>
+                </div>
+            </div>
+            <div class="fc-card-list" id="fcCardList"></div>
+        </div>
+    </div>
+
+    <!-- FLASHCARD MODE -->
+    <div id="fcModeScreen" class="fc-fullscreen hidden">
+        <div class="fc-topbar">
+            <div class="fc-topbar-left">
+                <span class="fc-topic-label" id="fcTopicLabel"></span>
+                <span class="fc-progress-text" id="fcProgressText"></span>
+            </div>
+            <div class="fc-progress-bar">
+                <div class="fc-progress-fill" id="fcProgressFill"></div>
+            </div>
+            <button class="fc-btn fc-btn-ghost fc-btn-sm" id="fcExitBtn">Exit</button>
+        </div>
+        <!-- Desktop two-pane -->
+        <div class="fc-panes" id="fcPanes">
+            <div class="fc-left">
+                <div class="fc-card" id="fcCardBox">
+                    <div class="fc-card-q" id="fcCardQ"></div>
+                </div>
+                <div class="fc-nav-btns">
+                    <button class="fc-nav-btn" id="fcPrevBtn">← Prev</button>
+                    <button class="fc-show-btn" id="fcShowBtn">Show Answer</button>
+                    <button class="fc-nav-btn" id="fcNextBtn">Next →</button>
+                </div>
+            </div>
+            <div class="fc-right" id="fcRight">
+                <div class="fc-right-empty" id="fcRightEmpty">
+                    <div class="fc-right-empty-icon">💡</div>
+                    <span>Click "Show Answer" to reveal</span>
+                </div>
+                <div id="fcAnswerBlock" class="hidden">
+                    <div class="fc-answer-section">
+                        <div class="fc-answer-label">Answer</div>
+                        <div class="fc-answer-card">
+                            <div class="fc-answer-text" id="fcAnswerText"></div>
+                        </div>
+                    </div>
+                    <div class="fc-answer-section" id="fcExplSection">
+                        <div class="fc-answer-label">Explanation</div>
+                        <div class="fc-answer-text" id="fcExplText"></div>
+                    </div>
+                    <div class="fc-answer-section" id="fcHintSection">
+                        <div class="fc-answer-label">Memory Aid</div>
+                        <div class="fc-answer-card">
+                            <div class="fc-answer-text fc-hint-text" id="fcHintText"></div>
+                        </div>
+                    </div>
+                    <div class="fc-rating-section">
+                        <div class="fc-answer-label">How did you do?</div>
+                        <div class="fc-rating-btns">
+                            <button class="fc-rating-btn fc-got" data-rating="got">✓ Got it</button>
+                            <button class="fc-rating-btn fc-almost" data-rating="almost">~ Almost</button>
+                            <button class="fc-rating-btn fc-missed" data-rating="missed">✗ Missed</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile single-pane -->
+        <div class="fc-mobile" id="fcMobile">
+            <div class="fc-mobile-card" id="fcMobileCard"></div>
+            <button class="fc-show-btn" id="fcMobileShowBtn">Show Answer</button>
+            <div id="fcMobileAnswer" class="hidden fc-answer-text" style="text-align:center;padding:0 20px;"></div>
+            <div class="fc-rating-btns" id="fcMobileRating" style="padding:0 20px;display:none;">
+                <button class="fc-rating-btn fc-got" data-rating="got">✓ Got it</button>
+                <button class="fc-rating-btn fc-almost" data-rating="almost">~ Almost</button>
+                <button class="fc-rating-btn fc-missed" data-rating="missed">✗ Missed</button>
+            </div>
+            <div class="fc-mobile-nav">
+                <button class="fc-nav-btn" id="fcMobilePrev">← Prev</button>
+                <button class="fc-nav-btn" id="fcMobileNext">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SESSION SUMMARY -->
+    <div id="fcSummaryScreen" class="fc-fullscreen hidden">
+        <div class="fc-summary-wrap">
+            <div>
+                <div class="fc-summary-title">Session Complete 🎉</div>
+                <div class="fc-summary-sub" id="fcSummarySub"></div>
+            </div>
+            <div class="fc-summary-stats">
+                <div class="fc-stat-card fc-stat-got"><span class="fc-stat-num" id="fcGotNum">0</span><span
+                        class="fc-stat-label">Got It</span></div>
+                <div class="fc-stat-card fc-stat-almost"><span class="fc-stat-num" id="fcAlmostNum">0</span><span
+                        class="fc-stat-label">Almost</span></div>
+                <div class="fc-stat-card fc-stat-missed"><span class="fc-stat-num" id="fcMissedNum">0</span><span
+                        class="fc-stat-label">Missed</span></div>
+            </div>
+            <div class="fc-summary-actions">
+                <button class="fc-btn fc-btn-primary hidden" id="fcReviewMissedBtn">Review Missed Cards</button>
+                <button class="fc-btn fc-btn-ghost" id="fcRestartBtn">Start Over</button>
+                <button class="fc-btn fc-btn-ghost" id="fcSummaryExitBtn">Exit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXIT WARNING MODAL -->
+    <div id="fcExitOverlay" class="fc-overlay hidden">
+        <div class="fc-modal" style="max-width:360px;">
+            <div class="fc-modal-header" style="text-align:center;">
+                <div style="font-size:2rem;margin-bottom:8px;">⚠️</div>
+                <div class="fc-modal-title">Exit Flashcard Mode?</div>
+                <div class="fc-modal-sub">You'll lose your current progress and remaining cards.</div>
+            </div>
+            <div class="fc-modal-footer" style="justify-content:center;padding-top:20px;">
+                <button class="fc-btn fc-btn-ghost" id="fcExitCancelBtn">Cancel</button>
+                <button class="fc-btn fc-btn-danger" id="fcExitConfirmBtn">Continue & Exit</button>
             </div>
         </div>
     </div>
