@@ -1,7 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordRequestForm
@@ -60,6 +60,23 @@ class GenerateRequest(BaseModel):
     prompt: str
     max_tokens: int = 4000
     temperature: float = 0.7
+
+class FlashcardDeckCreate(BaseModel):
+    topic: str
+    difficulty: str
+    cards: list[dict]
+
+
+class FlashcardDeckResponse(BaseModel):
+    id: int
+    topic: str
+    difficulty: str
+    count: int
+    cards: list[dict]
+    saved_at: str
+
+    class Config:
+        from_attributes = True
 
 
 # AUTH ENDPOINTS
@@ -169,9 +186,6 @@ def create_note(
 
 
 # Get User Notes
-from fastapi import Query  # add at top if not already imported
-
-
 @app.get("/notes", response_model=list[schemas.NoteResponse])
 def get_notes(
     saved: bool | None = Query(default=None),
@@ -289,7 +303,80 @@ async def generate_text(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Groq API Error: {str(e)}")
 
+# FLASHCARD DECKS CRUD
 
+# Save a flashcard deck
+@app.post("/flashcards", response_model=FlashcardDeckResponse)
+def save_flashcard_deck(
+    deck: FlashcardDeckCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    new_deck = models.FlashcardDeck(
+        topic=deck.topic,
+        difficulty=deck.difficulty,
+        count=len(deck.cards),
+        cards=deck.cards,
+        owner_id=current_user.id,
+    )
+    db.add(new_deck)
+    db.commit()
+    db.refresh(new_deck)
+    return FlashcardDeckResponse(
+        id=new_deck.id,
+        topic=new_deck.topic,
+        difficulty=new_deck.difficulty,
+        count=new_deck.count,
+        cards=new_deck.cards,
+        saved_at=new_deck.saved_at.isoformat(),
+    )
+
+
+# Get all flashcard decks for current user
+@app.get("/flashcards", response_model=list[FlashcardDeckResponse])
+def get_flashcard_decks(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    decks = (
+        db.query(models.FlashcardDeck)
+        .filter(models.FlashcardDeck.owner_id == current_user.id)
+        .order_by(models.FlashcardDeck.saved_at.desc())
+        .all()
+    )
+    return [
+        FlashcardDeckResponse(
+            id=d.id,
+            topic=d.topic,
+            difficulty=d.difficulty,
+            count=d.count,
+            cards=d.cards,
+            saved_at=d.saved_at.isoformat(),
+        )
+        for d in decks
+    ]
+
+
+# Delete a flashcard deck
+@app.delete("/flashcards/{deck_id}")
+def delete_flashcard_deck(
+    deck_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    deck = (
+        db.query(models.FlashcardDeck)
+        .filter(
+            models.FlashcardDeck.id == deck_id,
+            models.FlashcardDeck.owner_id == current_user.id,
+        )
+        .first()
+    )
+    if not deck:
+        raise HTTPException(status_code=404, detail="Deck not found")
+    db.delete(deck)
+    db.commit()
+    return {"message": "Deck deleted"}
 
 # Static Files
 app.mount("/", StaticFiles(directory=".", html=True), name="static")

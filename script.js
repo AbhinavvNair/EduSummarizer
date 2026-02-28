@@ -287,11 +287,45 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key !== 'Escape') return;
         exitFocus();
         if (!$('settingsModal').classList.contains('hidden')) $('closeSettingsBtn').click();
-        if (!$('cmdPalette').classList.contains('hidden')) { $('cmdPalette').classList.remove('show'); setTimeout(() => $('cmdPalette').classList.add('hidden'), 200); }
+        if (!$('cmdPalette')?.classList.contains('hidden')) { $('cmdPalette').classList.remove('show'); setTimeout(() => $('cmdPalette').classList.add('hidden'), 200); }
         if (chatSidebar.classList.contains('open')) toggleChat();
-        if ($('confirmOverlay').classList.contains('show')) { $('confirmOverlay').classList.remove('show'); }
+        if ($('confirmOverlay')?.classList.contains('show')) { $('confirmOverlay').classList.remove('show'); }
         const lightbox = document.getElementById('imageLightbox');
         if (lightbox) lightbox.remove();
+
+        // ── Flashcard Escape Handling ──
+
+        // 1. Exit warning overlay (during active flashcard session) — dismiss it
+        if (!$('fcExitOverlay').classList.contains('hidden')) {
+            $('fcExitOverlay').classList.add('hidden');
+            return;
+        }
+
+        // 2. Active flashcard mode or review screen — show exit warning
+        if (!$('fcModeScreen').classList.contains('hidden') ||
+            !$('fcReviewScreen').classList.contains('hidden')) {
+            window._fcAskExit?.();   // ✓ correct
+            return;
+        }
+
+        // 3. Config/loading/error modal — close it directly, no warning needed
+        if (!$('fcOverlay').classList.contains('hidden')) {
+            $('fcOverlay').classList.add('hidden');
+            return;
+        }
+
+        // 4. Summary screen — close it directly
+        if (!$('fcSummaryScreen').classList.contains('hidden')) {
+            $('fcSummaryScreen').classList.add('hidden');
+            return;
+        }
+        // 5. Saved decks screen — close and return to config
+        if (!$('fcSavedScreen')?.classList.contains('hidden')) {
+            $('fcSavedScreen').classList.add('hidden');
+            $('fcOverlay').classList.remove('hidden');
+            window._fcShowStep('fcStepConfig');
+            return;
+        }
     });
     let audioCtx, noiseSrc;
     $('focusSoundBtn')?.addEventListener('click', () => {
@@ -588,6 +622,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 fcRenderCardList();
             });
             el('fcCancelEdit').addEventListener('click', () => fcRenderCardList());
+
+            // Escape cancels the edit without bubbling up to close the whole review screen
+            [el('fcEditQ'), el('fcEditA')].forEach(textarea => {
+                textarea.addEventListener('keydown', e => {
+                    if (e.key === 'Escape') {
+                        e.stopPropagation();  // prevents the global handler from firing
+                        fcRenderCardList();
+                    }
+                });
+            });
         }
 
         el('fcRegenBtn').addEventListener('click', () => {
@@ -598,6 +642,91 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         el('fcStartBtn').addEventListener('click', () => fcStartMode(fcCards));
+        // ── Save deck to backend
+        el('fcSaveBtn').addEventListener('click', async () => {
+            try {
+                const res = await apiFetch(`${API_BASE}/flashcards`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        topic: fcConfig.topic,
+                        difficulty: fcConfig.difficulty,
+                        cards: fcCards
+                    })
+                });
+                if (!res.ok) throw new Error();
+                showToast('Deck saved!');
+            } catch {
+                showToast('Failed to save deck');
+            }
+        });
+
+        // ── Open saved decks screen
+        el('fcViewSavedBtn').addEventListener('click', () => {
+            el('fcOverlay').classList.add('hidden');
+            fcRenderSavedDecks();
+            el('fcSavedScreen').classList.remove('hidden');
+        });
+
+        // ── Close saved decks screen
+        el('fcSavedCloseBtn').addEventListener('click', () => {
+            el('fcSavedScreen').classList.add('hidden');
+            el('fcOverlay').classList.remove('hidden');
+            fcShowStep('fcStepConfig');
+        });
+
+        // ── Load and render saved decks from backend
+        async function fcRenderSavedDecks() {
+            const list = el('fcSavedList');
+            list.innerHTML = '<div class="fc-empty-saved">Loading...</div>';
+
+            try {
+                const res = await apiFetch(`${API_BASE}/flashcards`);
+                if (!res.ok) throw new Error();
+                const decks = await res.json();
+
+                list.innerHTML = '';
+                if (decks.length === 0) {
+                    list.innerHTML = '<div class="fc-empty-saved">No saved decks yet.</div>';
+                    return;
+                }
+
+                decks.forEach(deck => {
+                    const row = document.createElement('div');
+                    row.className = 'fc-saved-row';
+                    row.innerHTML = `
+                        <div class="fc-saved-info" data-id="${deck.id}">
+                            <span class="fc-saved-label">${deck.count} cards · ${deck.topic} · ${deck.difficulty}</span>
+                            <span class="fc-saved-date">${new Date(deck.saved_at).toLocaleDateString()}</span>
+                        </div>
+                        <button class="fc-delete-deck" data-id="${deck.id}" title="Delete">✕</button>`;
+
+                    row.querySelector('.fc-saved-info').addEventListener('click', () => {
+                        fcCards = deck.cards.map((c, i) => ({ ...c, id: i }));
+                        fcConfig.topic = deck.topic;
+                        fcConfig.difficulty = deck.difficulty;
+                        fcConfig.count = deck.count;
+                        el('fcSavedScreen').classList.add('hidden');
+                        fcShowReview();
+                    });
+
+                    row.querySelector('.fc-delete-deck').addEventListener('click', async () => {
+                        try {
+                            const r = await apiFetch(`${API_BASE}/flashcards/${deck.id}`, { method: "DELETE" });
+                            if (!r.ok) throw new Error();
+                            showToast('Deck deleted');
+                            fcRenderSavedDecks();
+                        } catch {
+                            showToast('Failed to delete deck');
+                        }
+                    });
+
+                    list.appendChild(row);
+                });
+            } catch {
+                list.innerHTML = '<div class="fc-empty-saved">Failed to load decks.</div>';
+            }
+        }
 
         // ── Flashcard mode
         function fcStartMode(deck) {
@@ -709,7 +838,8 @@ document.addEventListener('DOMContentLoaded', () => {
         function fcAskExit() {
             el('fcExitOverlay').classList.remove('hidden');
         }
-
+        window._fcAskExit = fcAskExit;   // expose to global keydown handler
+        window._fcShowStep = fcShowStep; // expose to global keydown handler
         el('fcExitCancelBtn').addEventListener('click', () => el('fcExitOverlay').classList.add('hidden'));
         el('fcExitConfirmBtn').addEventListener('click', () => {
             el('fcExitOverlay').classList.add('hidden');

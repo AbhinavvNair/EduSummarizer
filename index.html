@@ -352,6 +352,7 @@
                 </div>
                 <div class="fc-modal-footer">
                     <button class="fc-btn fc-btn-ghost" id="fcCancelBtn">Cancel</button>
+                    <button class="fc-btn fc-btn-ghost" id="fcViewSavedBtn">📂 Saved</button>
                     <button class="fc-btn fc-btn-primary" id="fcGenerateBtn">Generate →</button>
                 </div>
             </div>
@@ -388,6 +389,7 @@
                 </div>
                 <div class="fc-review-actions">
                     <button class="fc-btn fc-btn-ghost" id="fcRegenBtn">↻ Regenerate All</button>
+                    <button class="fc-btn fc-btn-ghost" id="fcSaveBtn">🔖 Save Deck</button>
                     <button class="fc-btn fc-btn-primary" id="fcStartBtn">Start Flashcards →</button>
                 </div>
             </div>
@@ -516,7 +518,19 @@
             </div>
         </div>
     </div>
-
+    <!-- ==================== SAVED FLASHCARD DECKS ==================== -->
+    <div id="fcSavedScreen" class="fc-fullscreen hidden">
+        <div class="fc-review-wrap">
+            <div class="fc-review-header">
+                <div>
+                    <div class="fc-review-title">Saved Decks</div>
+                    <div class="fc-review-meta">Click a deck to load it</div>
+                </div>
+                <button class="fc-btn fc-btn-ghost" id="fcSavedCloseBtn">✕ Close</button>
+            </div>
+            <div id="fcSavedList"></div>
+        </div>
+    </div>
     <div id="toast" class="toast">Action Complete</div>
     <script src="script.js"></script>
 </body>
