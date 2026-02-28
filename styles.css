@@ -90,7 +90,8 @@ body { font-family: 'Outfit', sans-serif; height: 100vh; background: var(--bg-ap
 .resize-handler::after { content: ''; width: 4px; height: 40px; background: var(--border); border-radius: 4px; transition: all 0.2s; }
 .resize-handler:hover::after, .resize-handler.active::after { background: var(--primary); height: 100%; width: 6px; box-shadow: 0 0 10px var(--orb-glow); }
 body.resizing { cursor: col-resize !important; user-select: none; }
-.panel-head { height: 45px; padding: 0 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); }
+.panel-head { height: 45px; padding: 0 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); flex-wrap: nowrap; gap: 8px; overflow: visible; }
+.panel-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 .panel-title { font-weight: 600; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; } .head-left { display: flex; align-items: center; gap: 12px; }
 .chip { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size: 0.75rem; cursor: pointer; } .chip:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
 .mic-btn, .icon-btn, .audio-btn { border-radius: 50%; border: 1px solid transparent; background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }

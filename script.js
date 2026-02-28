@@ -138,6 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
         try { const r = await apiFetch(`http://127.0.0.1:8000/notes/${id}/bookmark`, { method: "PATCH" }); if (!r.ok) throw new Error(); await loadNotes(); showToast(isRemoving ? "Removed bookmark" : "Saved note"); } catch { showToast("Bookmark failed"); }
     };
     $('saveNoteBtn')?.addEventListener('click', () => handleBookmark(lastGeneratedNoteId));
+    $('copyBtn')?.addEventListener('click', () => {
+        if (!currentRawResponse) return showToast("Nothing to copy");
+        navigator.clipboard.writeText(currentRawResponse);
+        showToast("Copied!");
+    });
 
     const showDeleteModal = async (id) => { if (confirm("Delete this note?")) { try { await apiFetch(`http://127.0.0.1:8000/notes/${id}`, { method: "DELETE" }); await loadNotes(); showToast("Note deleted"); } catch { showToast("Delete failed"); } } };
 
