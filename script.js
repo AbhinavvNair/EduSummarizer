@@ -1899,6 +1899,8 @@ Writing style:
 
                 const graphDefinition = block.textContent;
                 const graphId = `mermaidGraph${idx}`;
+                const existingGraph = document.getElementById(graphId);
+                
 
                 const existingGraph = document.getElementById(graphId);
                 if (existingGraph) {
