@@ -8,6 +8,8 @@ def _sqlite_url() -> str:
     db_path = Path(__file__).resolve().parents[2] / "edusummarizer.db"
     return f"sqlite:///{db_path}"
 
+def get_engine():
+    return engine
 
 def _create_engine():
     url = settings.DATABASE_URL or _sqlite_url()
